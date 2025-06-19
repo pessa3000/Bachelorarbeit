@@ -1,0 +1,26 @@
+List of people projects etc i need to mention in my bachelorarbeit
+
+
+DATA
+- AnCoRa corpus
+- engl corpus
+
+
+
+TOOLS I AM USING
+- For the spacy to conll parser: https://pypi.org/project/spacy-conll/
+
+PAPERS I READ
+- check the bibliography floder of my old laptop (deumel's)
+-
+
+
+
+When processing large volumes of text, the statistical models are usually more efficient if you let them work on batches of texts. spaCy’s nlp.pipe
+
+method takes an iterable of texts and yields processed Doc objects. The batching is done internally.
+
+texts = ["This is a text", "These are lots of texts", "..."]
+- docs = [nlp(text) for text in texts]
++ docs = list(nlp.pipe(texts))
+https://spacy.io/usage/processing-pipelines
