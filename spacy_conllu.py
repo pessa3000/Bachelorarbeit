@@ -2,13 +2,16 @@
 
 #analitza text en catala fent servir l spacy i el guarda en format conllu
 #aquest funcio es pot executar de la manera seguent :D
+# ./spacy_to_conll text.txt > prova_conll.conllu -> ja no,  me n he cansat
 
+import os
 import sys
 
-def spacy_to_conll(text):
+def spacy_to_conll(text, lang= "ca"):
     import spacy
     import spacy_conll
-    nlp = spacy.load("ca_core_news_trf")
+    if lang == "ca":
+        nlp = spacy.load("ca_core_news_trf")
     nlp.add_pipe("conll_formatter",config={"include_headers": True}, last=True)
     doc = nlp(text)
 
@@ -23,17 +26,24 @@ def clean_text(content):
         content = content.replace(c, "")
     content = content.replace("”", ".")
     content = content.replace("\n", " ")
-    #content=content.lower()
+    content = content.replace("  ", " ")
+    #content = content.replace("pta.", "pta") # carregar me abreviatures que poden carregar-se el separador de frases de l spacy
+    #content = content.lower()
     return content
 
 
-def main():
-    with open("deanotate/d50_ca_ancora-ud-train.conllu.txt", "r") as file:
+def main(infile, outfile, lang= "ca"):
+    infolder = "sentences"
+    outfolder = "analysis"
+    os.makedirs(infolder, exist_ok=True)
+    os.makedirs(outfolder, exist_ok=True)
+
+    with open(os.path.join(infolder, infile), "r") as file:
         content = file.read()
     content = clean_text(content)
 
-    with open("50_ca_spacy.conllu", "w") as f:
-        f.write(spacy_to_conll(content))
+    with open(os.path.join(outfolder, outfile), "w") as f:
+        f.write(spacy_to_conll(content, lang))
 
 
 

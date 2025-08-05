@@ -1,0 +1,280 @@
+# sent_id = 1
+# text = Mor el papa Francesc als 88 anys, després de més d'una dècada de pontificat  
+1	Mor	morir	VERB	VERB	Mood=Ind|Number=Sing|Person=3|Tense=Pres|VerbForm=Fin	0	ROOT	_	_
+2	el	el	DET	DET	Definite=Def|Gender=Masc|Number=Sing|PronType=Art	3	det	_	_
+3	papa	papa	NOUN	NOUN	Gender=Masc|Number=Sing	1	nsubj	_	_
+4	Francesc	Francesc	PROPN	PROPN	_	3	appos	_	_
+5	a	a	ADP	ADP	_	8	case	_	SpaceAfter=No
+6	ls	el	DET	DET	Definite=Def|Gender=Masc|Number=Plur|PronType=Art	8	det	_	_
+7	88	88	NUM	NUM	NumForm=Digit|NumType=Card	8	nummod	_	_
+8	anys	any	NOUN	NOUN	Gender=Masc|Number=Plur	1	obl	_	SpaceAfter=No
+9	,	,	PUNCT	PUNCT	PunctType=Comm	10	punct	_	_
+10	després	després	ADV	ADV	_	1	advmod	_	_
+11	de	de	ADP	ADP	_	15	case	_	_
+12	més	més	ADV	ADV	Degree=Cmp	14	advmod	_	_
+13	d'	de	ADP	ADP	_	14	case	_	SpaceAfter=No
+14	una	un	DET	DET	Gender=Fem|Number=Sing|PronType=Ind	15	det	_	_
+15	dècada	dècada	NOUN	NOUN	Gender=Fem|Number=Sing	10	obl	_	_
+16	de	de	ADP	ADP	_	17	case	_	_
+17	pontificat	pontificat	NOUN	NOUN	Gender=Masc|Number=Sing	15	nmod	_	_
+18	 	 	SPACE	SPACE	_	1	dep	_	SpaceAfter=No
+
+# sent_id = 2
+# text = Ciutat del Vaticà, [data fictícia] —
+1	Ciutat	Ciutat	PROPN	PROPN	_	0	ROOT	_	_
+2	d	de	ADP	ADP	_	4	case	_	SpaceAfter=No
+3	el	el	DET	DET	Definite=Def|Gender=Masc|Number=Sing|PronType=Art	4	det	_	_
+4	Vaticà	Vaticà	PROPN	PROPN	_	1	flat	_	SpaceAfter=No
+5	,	,	PUNCT	PUNCT	PunctType=Comm	7	punct	_	_
+6	[	[	PUNCT	PUNCT	PunctSide=Ini|PunctType=Comm	7	punct	_	SpaceAfter=No
+7	data	data	NOUN	NOUN	Gender=Fem|Number=Sing	1	appos	_	_
+8	fictícia	fictici	ADJ	ADJ	Gender=Fem|Number=Sing	7	amod	_	SpaceAfter=No
+9	]	]	PUNCT	PUNCT	PunctSide=Fin|PunctType=Comm	7	punct	_	_
+10	—	—	PUNCT	PUNCT	PunctType=Dash	1	punct	_	_
+
+# sent_id = 3
+# text = El papa Francesc ha mort aquest matí als 88 anys d’edat al Vaticà, segons ha confirmat la Santa Seu en un comunicat oficial.
+1	El	el	DET	DET	Definite=Def|Gender=Masc|Number=Sing|PronType=Art	2	det	_	_
+2	papa	papa	NOUN	NOUN	Gender=Masc|Number=Sing	5	nsubj	_	_
+3	Francesc	Francesc	PROPN	PROPN	_	2	appos	_	_
+4	ha	haver	AUX	AUX	Mood=Ind|Number=Sing|Person=3|Tense=Pres|VerbForm=Fin	5	aux	_	_
+5	mort	matar	VERB	VERB	Gender=Masc|Number=Sing|Tense=Past|VerbForm=Part	0	ROOT	_	_
+6	aquest	aquest	DET	DET	Gender=Masc|Number=Sing|PronType=Dem	7	det	_	_
+7	matí	matí	NOUN	NOUN	Gender=Masc|Number=Sing	5	obl	_	_
+8	a	a	ADP	ADP	_	11	case	_	SpaceAfter=No
+9	ls	el	DET	DET	Definite=Def|Gender=Masc|Number=Plur|PronType=Art	11	det	_	_
+10	88	88	NUM	NUM	NumForm=Digit|NumType=Card	11	nummod	_	_
+11	anys	any	NOUN	NOUN	Gender=Masc|Number=Plur	5	obl	_	_
+12	d’	d’	ADP	ADP	_	13	case	_	SpaceAfter=No
+13	edat	edat	NOUN	NOUN	Gender=Fem|Number=Sing	11	nmod	_	_
+14	a	a	ADP	ADP	_	16	case	_	SpaceAfter=No
+15	l	el	DET	DET	Definite=Def|Gender=Masc|Number=Sing|PronType=Art	16	det	_	_
+16	Vaticà	Vaticà	PROPN	PROPN	_	5	obl	_	SpaceAfter=No
+17	,	,	PUNCT	PUNCT	PunctType=Comm	20	punct	_	_
+18	segons	segons	SCONJ	SCONJ	_	20	mark	_	_
+19	ha	haver	AUX	AUX	Mood=Ind|Number=Sing|Person=3|Tense=Pres|VerbForm=Fin	20	aux	_	_
+20	confirmat	confirmar	VERB	VERB	Gender=Masc|Number=Sing|Tense=Past|VerbForm=Part	5	advcl	_	_
+21	la	el	DET	DET	Definite=Def|Gender=Fem|Number=Sing|PronType=Art	22	det	_	_
+22	Santa	Santa	PROPN	PROPN	_	20	nsubj	_	_
+23	Seu	Seu	PROPN	PROPN	_	22	flat	_	_
+24	en	en	ADP	ADP	_	26	case	_	_
+25	un	un	DET	DET	Gender=Masc|Number=Sing|PronType=Ind	26	det	_	_
+26	comunicat	comunicat	NOUN	NOUN	Gender=Masc|Number=Sing	20	obl	_	_
+27	oficial	oficial	ADJ	ADJ	Number=Sing	26	amod	_	SpaceAfter=No
+28	.	.	PUNCT	PUNCT	PunctType=Peri	5	punct	_	_
+
+# sent_id = 4
+# text = El pontífex, nascut Jorge Mario Bergoglio a Buenos Aires, Argentina, ha estat el primer papa llatinoamericà i el primer jesuïta en ocupar el càrrec.  
+1	El	el	DET	DET	Definite=Def|Gender=Masc|Number=Sing|PronType=Art	2	det	_	_
+2	pontífex	pontífex	NOUN	NOUN	Gender=Masc|Number=Sing	18	nsubj	_	SpaceAfter=No
+3	,	,	PUNCT	PUNCT	PunctType=Comm	4	punct	_	_
+4	nascut	nascut	ADJ	ADJ	Gender=Masc|Number=Sing|VerbForm=Part	2	amod	_	_
+5	Jorge	Jorge	PROPN	PROPN	_	4	obl	_	_
+6	Mario	Mario	PROPN	PROPN	_	5	flat	_	_
+7	Bergoglio	Bergoglio	PROPN	PROPN	_	5	flat	_	_
+8	a	a	ADP	ADP	_	9	case	_	_
+9	Buenos	Buenos	PROPN	PROPN	_	4	obl	_	_
+10	Aires	Aires	PROPN	PROPN	_	9	flat	_	SpaceAfter=No
+11	,	,	PUNCT	PUNCT	PunctType=Comm	12	punct	_	_
+12	Argentina	Argentina	PROPN	PROPN	_	9	flat	_	SpaceAfter=No
+13	,	,	PUNCT	PUNCT	PunctType=Comm	4	punct	_	_
+14	ha	haver	AUX	AUX	Mood=Ind|Number=Sing|Person=3|Tense=Pres|VerbForm=Fin	18	aux	_	_
+15	estat	ser	AUX	AUX	Gender=Masc|Number=Sing|Tense=Past|VerbForm=Part	18	cop	_	_
+16	el	el	DET	DET	Definite=Def|Gender=Masc|Number=Sing|PronType=Art	18	det	_	_
+17	primer	primer	ADJ	ADJ	Gender=Masc|NumType=Ord|Number=Sing	18	amod	_	_
+18	papa	papa	NOUN	NOUN	Gender=Masc|Number=Sing	0	ROOT	_	_
+19	llatinoamericà	llatinoamericà	ADJ	ADJ	Gender=Masc|Number=Sing	18	amod	_	_
+20	i	i	CCONJ	CCONJ	_	23	cc	_	_
+21	el	el	DET	DET	Definite=Def|Gender=Masc|Number=Sing|PronType=Art	23	det	_	_
+22	primer	primer	ADJ	ADJ	Gender=Masc|NumType=Ord|Number=Sing	23	amod	_	_
+23	jesuïta	jesuïta	NOUN	NOUN	Gender=Masc|Number=Sing	18	conj	_	_
+24	en	en	ADP	ADP	_	25	mark	_	_
+25	ocupar	ocupar	VERB	VERB	VerbForm=Inf	23	acl	_	_
+26	el	el	DET	DET	Definite=Def|Gender=Masc|Number=Sing|PronType=Art	27	det	_	_
+27	càrrec	càrrec	NOUN	NOUN	Gender=Masc|Number=Sing	25	obj	_	SpaceAfter=No
+28	.	.	PUNCT	PUNCT	PunctType=Peri	18	punct	_	_
+29	 	 	SPACE	SPACE	_	18	dep	_	SpaceAfter=No
+
+# sent_id = 5
+# text = Des del seu nomenament l’any 2013, Francesc ha destacat per una visió pastoral més oberta, un enfocament decidit en temes com el canvi climàtic, la justícia social i la reforma de l’Església.
+1	Des	des	ADP	ADP	_	5	case	_	_
+2	d	de	ADP	ADP	_	1	case	_	SpaceAfter=No
+3	el	el	DET	DET	Definite=Def|Gender=Masc|Number=Sing|PronType=Art	1	det	_	_
+4	seu	seu	DET	DET	Gender=Masc|Number=Sing|Person=3|Poss=Yes|PronType=Prs	5	det	_	_
+5	nomenament	nomenament	NOUN	NOUN	Gender=Masc|Number=Sing	12	obl	_	_
+6	l’	l’	DET	DET	Definite=Def|Number=Sing|PronType=Art	7	det	_	SpaceAfter=No
+7	any	any	NOUN	NOUN	_	5	appos	_	_
+8	2013	2013	NUM	NUM	NumForm=Digit|NumType=Card	7	compound	_	SpaceAfter=No
+9	,	,	PUNCT	PUNCT	PunctType=Comm	5	punct	_	_
+10	Francesc	Francesc	PROPN	PROPN	_	12	nsubj	_	_
+11	ha	haver	AUX	AUX	Mood=Ind|Number=Sing|Person=3|Tense=Pres|VerbForm=Fin	12	aux	_	_
+12	destacat	destacar	VERB	VERB	Gender=Masc|Number=Sing|Tense=Past|VerbForm=Part	0	ROOT	_	_
+13	per	per	ADP	ADP	_	15	case	_	_
+14	una	un	DET	DET	Gender=Fem|Number=Sing|PronType=Ind	15	det	_	_
+15	visió	visió	NOUN	NOUN	Gender=Fem|Number=Sing	12	obl	_	_
+16	pastoral	pastoral	ADJ	ADJ	Number=Sing	15	amod	_	_
+17	més	més	ADV	ADV	Degree=Cmp	18	advmod	_	_
+18	oberta	obert	ADJ	ADJ	Gender=Fem|Number=Sing|VerbForm=Part	15	amod	_	SpaceAfter=No
+19	,	,	PUNCT	PUNCT	PunctType=Comm	21	punct	_	_
+20	un	un	DET	DET	Gender=Masc|Number=Sing|PronType=Ind	21	det	_	_
+21	enfocament	enfocament	NOUN	NOUN	Gender=Masc|Number=Sing	15	appos	_	_
+22	decidit	decidit	ADJ	ADJ	Gender=Masc|Number=Sing|VerbForm=Part	21	amod	_	_
+23	en	en	ADP	ADP	_	24	case	_	_
+24	temes	tema	NOUN	NOUN	Gender=Masc|Number=Plur	15	nmod	_	_
+25	com	com	SCONJ	SCONJ	_	27	mark	_	_
+26	el	el	DET	DET	Definite=Def|Gender=Masc|Number=Sing|PronType=Art	27	det	_	_
+27	canvi	canvi	NOUN	NOUN	Gender=Masc|Number=Sing	24	nmod	_	_
+28	climàtic	climàtic	ADJ	ADJ	Gender=Masc|Number=Sing	27	amod	_	SpaceAfter=No
+29	,	,	PUNCT	PUNCT	PunctType=Comm	31	punct	_	_
+30	la	el	DET	DET	Definite=Def|Gender=Fem|Number=Sing|PronType=Art	31	det	_	_
+31	justícia	justícia	NOUN	NOUN	Gender=Fem|Number=Sing	27	appos	_	_
+32	social	social	ADJ	ADJ	Number=Sing	31	amod	_	_
+33	i	i	CCONJ	CCONJ	_	35	cc	_	_
+34	la	el	DET	DET	Definite=Def|Gender=Fem|Number=Sing|PronType=Art	35	det	_	_
+35	reforma	reforma	NOUN	NOUN	Gender=Fem|Number=Sing	27	conj	_	_
+36	de	de	ADP	ADP	_	38	case	_	_
+37	l’	l’	DET	DET	Definite=Def|Number=Sing|PronType=Art	38	det	_	SpaceAfter=No
+38	Església	Església	PROPN	PROPN	_	35	nmod	_	SpaceAfter=No
+39	.	.	PUNCT	PUNCT	PunctType=Peri	12	punct	_	_
+
+# sent_id = 6
+# text = Durant el seu pontificat, ha intentat apropar la institució als fidels amb un estil senzill i un llenguatge proper.  
+1	Durant	durant	ADP	ADP	_	4	case	_	_
+2	el	el	DET	DET	Gender=Masc|Number=Sing|PronType=Art	4	det	_	_
+3	seu	seu	DET	DET	Gender=Masc|Number=Sing|Person=3|Poss=Yes|PronType=Prs	4	det	_	_
+4	pontificat	pontificat	NOUN	NOUN	Gender=Masc|Number=Sing	7	obl	_	SpaceAfter=No
+5	,	,	PUNCT	PUNCT	PunctType=Comm	4	punct	_	_
+6	ha	haver	AUX	AUX	Mood=Ind|Number=Sing|Person=3|Tense=Pres|VerbForm=Fin	7	aux	_	_
+7	intentat	intentar	VERB	VERB	Gender=Masc|Number=Sing|Tense=Past|VerbForm=Part	0	ROOT	_	_
+8	apropar	apropar	VERB	VERB	VerbForm=Inf	7	xcomp	_	_
+9	la	el	DET	DET	Definite=Def|Gender=Fem|Number=Sing|PronType=Art	10	det	_	_
+10	institució	institució	NOUN	NOUN	Gender=Fem|Number=Sing	8	obj	_	_
+11	a	a	ADP	ADP	_	13	case	_	SpaceAfter=No
+12	ls	el	DET	DET	Definite=Def|Gender=Masc|Number=Plur|PronType=Art	13	det	_	_
+13	fidels	fidel	NOUN	NOUN	Number=Plur	8	obj	_	_
+14	amb	amb	ADP	ADP	_	16	case	_	_
+15	un	un	DET	DET	Gender=Masc|Number=Sing|PronType=Ind	16	det	_	_
+16	estil	estil	NOUN	NOUN	Gender=Masc|Number=Sing	8	obl	_	_
+17	senzill	senzill	ADJ	ADJ	Gender=Masc|Number=Sing	16	amod	_	_
+18	i	i	CCONJ	CCONJ	_	20	cc	_	_
+19	un	un	DET	DET	Gender=Masc|Number=Sing|PronType=Ind	20	det	_	_
+20	llenguatge	llenguatge	NOUN	NOUN	Gender=Masc|Number=Sing	16	conj	_	_
+21	proper	proper	ADJ	ADJ	Gender=Masc|Number=Sing	20	amod	_	SpaceAfter=No
+22	.	.	PUNCT	PUNCT	PunctType=Peri	7	punct	_	_
+23	 	 	SPACE	SPACE	_	7	dep	_	SpaceAfter=No
+
+# sent_id = 7
+# text = La salut del pontífex havia estat motiu de preocupació en els darrers anys, especialment després de diverses hospitalitzacions i intervencions quirúrgiques.
+1	La	el	DET	DET	Definite=Def|Gender=Fem|Number=Sing|PronType=Art	2	det	_	_
+2	salut	salut	NOUN	NOUN	Gender=Fem|Number=Sing	8	nsubj	_	_
+3	d	de	ADP	ADP	_	5	case	_	SpaceAfter=No
+4	el	el	DET	DET	Definite=Def|Gender=Masc|Number=Sing|PronType=Art	5	det	_	_
+5	pontífex	pontífex	NOUN	NOUN	Gender=Masc|Number=Sing	2	nmod	_	_
+6	havia	haver	AUX	AUX	Mood=Ind|Number=Sing|Person=3|Tense=Imp|VerbForm=Fin	8	aux	_	_
+7	estat	ser	AUX	AUX	Gender=Masc|Number=Sing|Tense=Past|VerbForm=Part	8	cop	_	_
+8	motiu	motiu	NOUN	NOUN	Gender=Masc|Number=Sing	0	ROOT	_	_
+9	de	de	ADP	ADP	_	10	case	_	_
+10	preocupació	preocupació	NOUN	NOUN	Gender=Fem|Number=Sing	8	nmod	_	_
+11	en	en	ADP	ADP	_	14	case	_	_
+12	els	el	DET	DET	Definite=Def|Gender=Masc|Number=Plur|PronType=Art	14	det	_	_
+13	darrers	darrer	ADJ	ADJ	Gender=Masc|NumType=Ord|Number=Plur	14	amod	_	_
+14	anys	any	NOUN	NOUN	Gender=Masc|Number=Plur	8	obl	_	SpaceAfter=No
+15	,	,	PUNCT	PUNCT	PunctType=Comm	17	punct	_	_
+16	especialment	especialment	ADV	ADV	_	17	advmod	_	_
+17	després	després	ADV	ADV	_	8	advmod	_	_
+18	de	de	ADP	ADP	_	20	case	_	_
+19	diverses	divers	DET	DET	Gender=Fem|Number=Plur|PronType=Ind	20	det	_	_
+20	hospitalitzacions	hospitalització	NOUN	NOUN	Gender=Fem|Number=Plur	17	obl	_	_
+21	i	i	CCONJ	CCONJ	_	22	cc	_	_
+22	intervencions	intervenció	NOUN	NOUN	Gender=Fem|Number=Plur	20	conj	_	_
+23	quirúrgiques	quirúrgic	ADJ	ADJ	Gender=Fem|Number=Plur	22	amod	_	SpaceAfter=No
+24	.	.	PUNCT	PUNCT	PunctType=Peri	8	punct	_	_
+
+# sent_id = 8
+# text = Malgrat això, va continuar exercint el seu ministeri fins als últims dies amb determinació i fe.  
+1	Malgrat	malgrat	ADP	ADP	_	2	case	_	_
+2	això	això	PRON	PRON	Number=Sing|PronType=Dem	5	obl	_	SpaceAfter=No
+3	,	,	PUNCT	PUNCT	PunctType=Comm	2	punct	_	_
+4	va	anar	AUX	AUX	Mood=Ind|Number=Sing|Person=3|Tense=Pres|VerbForm=Fin	5	aux	_	_
+5	continuar	continuar	VERB	VERB	VerbForm=Inf	0	ROOT	_	_
+6	exercint	exercir	VERB	VERB	VerbForm=Ger	5	xcomp	_	_
+7	el	el	DET	DET	Gender=Masc|Number=Sing|PronType=Art	9	det	_	_
+8	seu	seu	DET	DET	Gender=Masc|Number=Sing|Person=3|Poss=Yes|PronType=Prs	9	det	_	_
+9	ministeri	ministeri	NOUN	NOUN	Gender=Masc|Number=Sing	6	obj	_	_
+10	fins	fins	ADP	ADP	_	14	case	_	_
+11	a	a	ADP	ADP	_	14	case	_	SpaceAfter=No
+12	ls	el	DET	DET	Definite=Def|Gender=Masc|Number=Plur|PronType=Art	14	det	_	_
+13	últims	últim	ADJ	ADJ	Gender=Masc|NumType=Ord|Number=Plur	14	amod	_	_
+14	dies	dia	NOUN	NOUN	Gender=Masc|Number=Plur	5	obl	_	_
+15	amb	amb	ADP	ADP	_	16	case	_	_
+16	determinació	determinació	NOUN	NOUN	Gender=Fem|Number=Sing	5	obl	_	_
+17	i	i	CCONJ	CCONJ	_	18	cc	_	_
+18	fe	fe	NOUN	NOUN	Gender=Fem|Number=Sing	16	conj	_	SpaceAfter=No
+19	.	.	PUNCT	PUNCT	PunctType=Peri	5	punct	_	_
+20	 	 	SPACE	SPACE	_	5	dep	_	SpaceAfter=No
+
+# sent_id = 9
+# text = Amb la seva mort, s’obre ara un període de Sede Vacante i es convocarà el conclave per a l’elecció d’un nou Papa, tal com estableix la normativa del Vaticà.  
+1	Amb	amb	ADP	ADP	_	4	case	_	_
+2	la	el	DET	DET	Gender=Fem|Number=Sing|PronType=Art	4	det	_	_
+3	seva	seu	DET	DET	Gender=Fem|Number=Sing|Person=3|Poss=Yes|PronType=Prs	4	det	_	_
+4	mort	mort	NOUN	NOUN	Gender=Fem|Number=Sing	7	obl	_	SpaceAfter=No
+5	,	,	PUNCT	PUNCT	PunctType=Comm	4	punct	_	_
+6	s’	s’	PRON	PRON	Case=Acc,Dat|Person=3|PrepCase=Npr|PronType=Prs|Reflex=Yes	7	obj	_	SpaceAfter=No
+7	obre	obrir	VERB	VERB	Mood=Ind|Number=Sing|Person=3|Tense=Pres|VerbForm=Fin	0	ROOT	_	_
+8	ara	ara	ADV	ADV	_	7	advmod	_	_
+9	un	un	DET	DET	Gender=Masc|Number=Sing|PronType=Ind	10	det	_	_
+10	període	període	NOUN	NOUN	Gender=Masc|Number=Sing	7	nsubj	_	_
+11	de	de	ADP	ADP	_	12	case	_	_
+12	Sede	Sede	PROPN	PROPN	_	10	nmod	_	_
+13	Vacante	Vacante	PROPN	PROPN	_	12	flat	_	_
+14	i	i	CCONJ	CCONJ	_	16	cc	_	_
+15	es	se	PRON	PRON	Case=Acc,Dat|Person=3|PrepCase=Npr|PronType=Prs|Reflex=Yes	16	obj	_	_
+16	convocarà	convocar	VERB	VERB	Mood=Ind|Number=Sing|Person=3|Tense=Fut|VerbForm=Fin	7	conj	_	_
+17	el	el	DET	DET	Definite=Def|Gender=Masc|Number=Sing|PronType=Art	18	det	_	_
+18	conclave	conclave	NOUN	NOUN	Gender=Masc|Number=Sing	16	nsubj	_	_
+19	per	per	ADP	ADP	_	22	case	_	_
+20	a	a	ADP	ADP	_	22	case	_	_
+21	l’	l’	DET	DET	Definite=Def|Number=Sing|PronType=Art	22	det	_	SpaceAfter=No
+22	elecció	elecció	NOUN	NOUN	Gender=Fem|Number=Sing	16	obl	_	_
+23	d’	d’	ADP	ADP	_	26	case	_	SpaceAfter=No
+24	un	un	DET	DET	Gender=Masc|Number=Sing|PronType=Ind	26	det	_	_
+25	nou	nou	ADJ	ADJ	Gender=Masc|Number=Sing	26	amod	_	_
+26	Papa	Papa	PROPN	PROPN	_	22	nmod	_	SpaceAfter=No
+27	,	,	PUNCT	PUNCT	PunctType=Comm	28	punct	_	_
+28	tal	tal	PRON	PRON	Number=Sing|PronType=Dem	16	obl	_	_
+29	com	com	PRON	PRON	PronType=Rel	30	obl	_	_
+30	estableix	establir	VERB	VERB	Mood=Ind|Number=Sing|Person=3|Tense=Pres|VerbForm=Fin	28	acl	_	_
+31	la	el	DET	DET	Definite=Def|Gender=Fem|Number=Sing|PronType=Art	32	det	_	_
+32	normativa	normativa	NOUN	NOUN	Gender=Fem|Number=Sing	30	nsubj	_	_
+33	d	de	ADP	ADP	_	35	case	_	SpaceAfter=No
+34	el	el	DET	DET	Definite=Def|Gender=Masc|Number=Sing|PronType=Art	35	det	_	_
+35	Vaticà	Vaticà	PROPN	PROPN	_	32	nmod	_	SpaceAfter=No
+36	.	.	PUNCT	PUNCT	PunctType=Peri	7	punct	_	_
+37	 	 	SPACE	SPACE	_	7	dep	_	SpaceAfter=No
+
+# sent_id = 10
+# text = El món sencer ret homenatge a una figura que va marcar una nova etapa a la història contemporània de l’Església Catòlica.
+1	El	el	DET	DET	Definite=Def|Gender=Masc|Number=Sing|PronType=Art	2	det	_	_
+2	món	món	NOUN	NOUN	Gender=Masc|Number=Sing	4	nsubj	_	_
+3	sencer	sencer	ADJ	ADJ	Gender=Masc|Number=Sing	2	amod	_	_
+4	ret	retre	VERB	VERB	Mood=Ind|Number=Sing|Person=3|Tense=Pres|VerbForm=Fin	0	ROOT	_	_
+5	homenatge	homenatge	NOUN	NOUN	Gender=Masc|Number=Sing	4	obj	_	_
+6	a	a	ADP	ADP	_	8	case	_	_
+7	una	un	DET	DET	Gender=Fem|Number=Sing|PronType=Ind	8	det	_	_
+8	figura	figura	NOUN	NOUN	Gender=Fem|Number=Sing	4	obj	_	_
+9	que	que	PRON	PRON	PronType=Rel	11	nsubj	_	_
+10	va	anar	AUX	AUX	Mood=Ind|Number=Sing|Person=3|Tense=Pres|VerbForm=Fin	11	aux	_	_
+11	marcar	marcar	VERB	VERB	VerbForm=Inf	8	acl	_	_
+12	una	un	DET	DET	Gender=Fem|Number=Sing|PronType=Ind	14	det	_	_
+13	nova	nou	ADJ	ADJ	Gender=Fem|Number=Sing	14	amod	_	_
+14	etapa	etapa	NOUN	NOUN	Gender=Fem|Number=Sing	11	obj	_	_
+15	a	a	ADP	ADP	_	17	case	_	_
+16	la	el	DET	DET	Definite=Def|Gender=Fem|Number=Sing|PronType=Art	17	det	_	_
+17	història	història	NOUN	NOUN	Gender=Fem|Number=Sing	11	obl	_	_
+18	contemporània	contemporani	ADJ	ADJ	Gender=Fem|Number=Sing	17	amod	_	_
+19	de	de	ADP	ADP	_	21	case	_	_
+20	l’	l’	DET	DET	Definite=Def|Number=Sing|PronType=Art	21	det	_	SpaceAfter=No
+21	Església	Església	PROPN	PROPN	_	17	nmod	_	_
+22	Catòlica	Catòlica	PROPN	PROPN	_	21	flat	_	SpaceAfter=No
+23	.	.	PUNCT	PUNCT	PunctType=Peri	4	punct	_	_

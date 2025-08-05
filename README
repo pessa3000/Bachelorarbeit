@@ -1,0 +1,13 @@
+HI!
+
+from spacy_conllu import main as spacy_main
+
+This are the funcitons I have:
+
+- spacy_main(infile, outfile, num): analyses first #num sentences in infile and prints the output in the outfile file
+- clean_text(content): cleans the text according to certain parameters
+- deanotate(inflie, outfile, num): deanotates the sentences from a conllu file, returning them
+
+
+- test_annotation(annotation1, annotation2, num, attribute="upos", printf=0): compares two annotations
+
