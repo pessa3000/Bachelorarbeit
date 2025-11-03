@@ -1,0 +1,548 @@
+#programa per analitzar arxius conllu de maneres diverses, anar provant :)
+from conllu import parse
+import os
+from functools import wraps
+#with open("prova_conll.conllu", "r") as f:
+#    sentences = f.read()
+#    conllu_parse = parse(sentences)
+
+
+
+llista= [["upos", "DET"],["upos", "NOUN"]]
+
+def file_to_conllu(filename):
+    folder = "analysed_corpus"
+    with open(os.path.join(folder, filename), "r") as f:
+        sentences = f.read()
+        return parse(sentences)
+
+#receives a token and a dictionary of conditions to check on a single word(!)
+def check_conds(sent, token, index, conds):
+    #print("ey", type(conds))
+    if not isinstance(conds, dict):
+        print("error this is not a dict", conds, type(conds))
+        raise TypeError(f"Only dicts are allowed, got {conds} instead, which is {type(conds)}")
+        return 1
+    #all_met = all(token.get(k) == v for k, v in conds.items()) #this will have to become complicated
+    for k, v in conds.items():
+        #if it is a normal condition, check if it is false
+        if isinstance(v, str) and isinstance(k, str):
+            if token.get(k) != v:
+                return False
+            else:
+                pass
+            #when should even k be a dictionary??!
+        elif isinstance(k, str) or isinstance(k, dict):  # else v is a function that will be applied, if it is not true, then stop
+            if not v(sent, token, index, k):
+                return False
+            else:
+                pass
+        else:
+            #print("we re going into unknown territory")
+            if not k(sent, token, index, v):
+                return False
+            else:
+                pass
+    #print("flag :D")
+    #return token
+    return True
+
+
+############## ab hier gibt es meine selbsdefinierte funcitonen, um sahcen in dem corpus zu schauen
+
+
+#USED TO NEGATE FUNCTIONS
+def nicht(f):
+    @wraps(f)
+    def g(*args,**kwargs):
+        return not f(*args,**kwargs)
+    g.__name__ = f'negate({f.__name__})'
+    return g
+
+
+
+#Requires a dictionary of features to be checked :)
+def feats_include(sent, token, index, feat_dict):
+    if not isinstance(feat_dict, dict):
+        print("error, feats_include requires a dictionary of feats")
+        return False
+    if not token.get("feats"):
+        return False
+    elif isinstance(token["feats"], dict):
+        for keys, values in feat_dict.items():
+            if keys not in token["feats"].keys():
+                #print(keys, "missing")
+                return False
+            elif feat_dict[keys] != token["feats"][keys]:
+                #print(keys, "value dont match", feat_dict[keys], "is not", token["feats"][keys])
+                return False
+        #print("\t OLEE", token["feats"])
+        return True
+    return True
+
+#to be implemented z.B. like {parent_is: {"upos":"DET"}}
+def parent_is(sent, token, index, conds):
+    parent= sent[token.get("head")-1]
+    if check_conds(sent, parent, token.get("head")-1, conds):
+        #print(sent)
+        #print("token", token, token.get("id"), token.get("head"))
+        #print("parent", parent, parent.get("id"))
+        return True
+    else:
+        return False
+#TO BE IPMLEMENTED like this:
+#{is_not: {"upos":"NOUN", "deprel": "nsubj"}}
+# returns negative if the token fulfulls ALL conds (this is, in the example obj nouns reutrn trre)
+def is_not(sent, token, index, conds):
+    if check_conds(sent, token, index, conds):
+        return False
+    else:
+        return True
+
+#if any of the conditions in the list are fulfilled, it is negative
+def is_not_any_of(sent, token, index, l_conds):
+    for condy in l_conds:
+        if check_conds(sent, token, index, condy):
+            return False
+    return True
+
+#to be used like parent is: {has_son: {"deprel": "nsubj"}}
+# it can't receive lists of conditions, it checks one single dict the son muss fullfill ALL CONDITIONS
+# it should not be used in a merge conditions setting
+def has_son(sent, token, index, conds):
+    for word in sent:
+        if word.get("head") == token.get("id"):
+            if check_conds(sent, word, word.get("id")-1, conds):
+                #print("token", token.get("form"))
+                #print("word", word, sent[word.get("head")-1].get("form"))
+                #print(conds)
+                return True
+            else:
+                pass
+    return False
+
+#same but l_conds is a list of what the different sons should fulfill:
+# so there should be all of the sons there, the conditions in the list can be fulfilled by different sons
+#example: has_sons: [{"deprel": "nsubj", feats_include: {"PronType": "Rel"} } ]
+def has_sons(sent, token, index, l_conds):
+    for i, condy in enumerate(l_conds):
+        #print(f"\tchecking parents of {token} for cond. {i} of {len(l_conds)}")
+        if not has_son(sent, token, index, condy):
+            return False
+        else:
+            #print(f"\t\tcon {i} fulfilled")
+            pass
+    return True
+
+# for condition dictionaries {x: y}
+# where x is either str (i.e. "upos", or a function, i.e. "parent_is)
+# where if x is a str, y can be another str (i.e. "NOUN" or another function i.e. no_weak_pronoun )
+# if x is a function, it can be a dictionary (i.e. parent_is : {"upos":"noun"})
+#                       or a list of dictionaries (i.e. has_sons: [c1, c2]
+#                       or a string maybe?
+def merge_conditions_dicts(d1, d2):
+    z = {}
+    # checking if conditions are repeated
+    intersecting_keys = set(d1.keys()).intersection(set(d2.keys()))
+    print("intersecting keys:", intersecting_keys)
+    for key in intersecting_keys:
+        # case 0: value types not matching
+        if type(d1[key]) != type(d2[key]):
+            z[key] = f"err: value type for {key} not matching: {type(d1[key])} and {type(d2[key])}"
+            return z
+        # case 1: value is a string (x: "NOUN")
+        elif type(d1[key]) is str:
+            if d1[key] != d2[key]:
+                print(f"\t*\tzero intersection:{key} conflict: {d1[key]} != {d2[key]}")
+                z[key] = "impossible"
+                return z
+            else:
+                z[key] = d1[key]
+        #case 2: value is a dict (ex. {parent_is : {}}; or feats_include : {} )
+        elif type(d1[key]) is dict:
+            print("attempting to merge nested dict")
+            z[key] = merge_conditions_dicts(d1[key], d2[key])
+        # case 3: value is a list
+        # we just append lists and the function preceding them will decide what to do with them
+        elif type(d1[key]) is list:
+            z[key] = d1[key]+d2[key]
+        else:
+            print("we re trying to merge dicts and dont know what is going on", type(d1[key]))
+    # regarding other keys, they will be just appended to z
+    print("adding non intersecting keys")
+    for key in list(set(d1.keys()) -set(d1.keys()).intersection(set(d2.keys()))):
+        z[key] = d1[key]
+        print(key, z[key])
+    for key in set(d2.keys()) -set(d2.keys()).intersection(set(d1.keys())):
+        z[key] = d2[key]
+        print(key, z[key])
+    return z
+
+
+
+# conditions are still lsits of one dictionary!
+# It receives "evals":
+# EX: l4 = {"l4": [c4]}, where c4 is a dictionary of conditions
+def merge_evals(condict1, condict2):
+    print(f"merging:\n {condict1}\n and:\n {condict2}")
+    #print("dict2", condict2, "\n")
+    mega_dict= {}
+    for name1,cond1 in condict1.items():
+        for name2, cond2 in condict2.items():
+            #print(name1, cond1)
+            #print(name2, cond2)
+            condy1=cond1[0]
+            condy2=cond2[0]
+            z = merge_conditions_dicts(condy1, condy2)
+            #making z a stupid list of dicts again sigh
+            mega_dict.update({name1 + "__UND__" + name2 : [z]})
+    for cross_name, cross_cond in mega_dict.items():
+        print("RESULT:", cross_name, "::::", cross_cond, "\n")
+    return mega_dict
+
+# same workings as has_no_sons
+def has_no_sons(sent, token, index, l_conds):
+    for i, condy in enumerate(l_conds):
+        #print(f"\tchecking parents of {token} for cond. {i} of {len(l_conds)}")
+        if has_son(sent, token, index, condy):
+            return False
+        else:
+            #print(f"\t\tcon {i} fulfilled")
+            pass
+    return True
+
+
+
+
+
+#If there is a son that fullfills the conds, it is false
+# If there is none, it is true
+def has_no_son(sent, token, index, conds):
+    for word in sent:
+        if word.get("head") == token.get("id"):
+            if check_conds(sent, word, word.get("id")-1, conds):
+                #print("token", token.get("form"))
+                #print("word", word, sent[word.get("head")-1].get("form"))
+                #print(conds)
+                return False
+            else:
+                pass
+    return True
+
+
+#ex. {"head" : prev}
+#example: rel-condition prev requires the key of the condition to be the same as the previous one
+#k is the key of the cond
+
+def prev_head(sent, token, index, k):
+    if index == 1:
+        return False
+    if token.get(k) == index-1:
+        return True
+    else:
+        #print(f'actual head of the token {token.get(k)}, prev token{index-1}')
+        return False
+def next_head(sent, token, index, k):
+    if index == len(sent)-1:
+        print(token)
+        print("*************oops last word")
+        return False
+    elif token.get(k) == index+2:
+        #print("true:_)")
+        #print(token.get(k), sent[index-1],sent[index], sent[index+1])
+        return True
+    else:
+        #print(token.get(k), index+1, type(token.get(k)), type(index+1))
+        return False
+
+def head_smaller_than_id(sent, token, index, k):
+    if token.get(k) <= index+1:
+        #print(token.get(k), ">=", index+1)
+        if token.get(k) == index+1:
+            print("wtf", token.get("form"), sent[index+1])
+            print("ERROR: autohead detected, debugging time", token.get("form"), sent[index+1])
+        return True
+    else:
+        return False
+
+
+def head_greater_than_id(sent, token, index, k):
+    if token.get(k) >= index+1:
+        #print(token.get(k), ">=", index + 1)
+        if token.get(k) == index+1:
+            print("wtf", token.get("form"), sent[index+1])
+            print("ERROR: autohead detected, debugging time", token.get("form"), sent[index + 1])
+        return True
+    else:
+        return False
+
+def no_weak_pronoun(sent, token, index, k):
+    pron_list= {"hi", "en", "el", "se", "nos", "ho", "lo", "n’", "s’", "ne"}
+    if token.get('lemma') in pron_list:
+        return False
+    else:
+        #print(token, token.get('lemma'))
+        return True
+
+# This is necessary to check that the arguments of a verb are NOT subordinate clauses
+# in copulative subordinate clauses the token with the deprel is the head of the predicate
+def is_sub_clause_head_core_arg(sent, token, index, k):
+    clause_complement_deprels= ["csubj", "ccomp", "xcomp"]
+    if token.get("deprel") in clause_complement_deprels:
+                return True
+    else:
+        return False
+
+def is_sub_clause_head(sent, token, index, k):
+    clause_complement_deprels= ["csubj", "ccomp", "advcl", "acl", "xcomp"]
+    if token.get("deprel") in clause_complement_deprels:
+                return True
+    else:
+        return False
+
+
+def is_not_nominal_complement(sent, token, index, k):
+    not_nominal_deprels= [""]
+    deprel_list = ['det', 'nsubj', 'case', 'obj',  'ROOT', 'mark', 'obl',  'cc',  'punct',  'aux', 'ccomp', 'advmod', 'fixed', 'acl', 'nummod', 'cop', 'advcl', 'expl:pass', 'xcomp', 'csubj', 'iobj', 'parataxis', 'dep']
+
+# achtung this deprels are only like that if it CAN be a nominal component
+def is_nominal_complement(sent, token, index, k):
+    nominal_deprels = ['amod', 'det', 'flat', 'compound', 'conj',  'appos', 'nmod',]
+
+
+
+#I want to check that, there are no other tokens that go to token with a certain deprel relation (to check for subjectless or objectless verbs, f.e)
+def no_deprel(sent, token, index, k, dep="nsubj"):
+    for token2 in sent:
+        if token2.get("deprel") == dep and token2.get("head") == index+1:
+            #print(f'{token2["form"]} is {dep} of {token["form"]}')
+            #print(token)
+            #print(token2)
+            return False
+    #print(f'{token["form"]} has no dependent with the relation {dep}')
+    #print(f'feats {token["feats"]}')
+    return True
+
+
+def llargada_mitjana(filename):
+    l=0
+    if filename.endswith(".conllu"):
+        conllu_parse = file_to_conllu(filename)
+        for sent in conllu_parse:
+            #print(len(sent))
+            #print(sent.metadata["text"])
+            l=l+len(sent)
+        return l/len(conllu_parse)
+    if filename.endswith(".txt"):
+        print("we havent implemented this yet")
+        return 1
+        #folder = "sentences"
+        #with open(os.path.join(folder, filename), "r") as f:
+        #    sentences = f.read()
+        #    return parse(sentences)
+
+#so far conditions should be a list of dictionaries
+#and it works btw :D
+def check_conllu_for_conditions(filename, conditions, printf=False):
+    conllu_parse= file_to_conllu(filename)
+    l= len(conditions)
+    llista =[]
+    count=0 #counts how many times the conditions are fulfilled in the whole corpus
+    if not isinstance(conditions, list):
+        for conds in conditions:
+            if not isinstance(conds, dict):
+                raise TypeError(f"conditions must be a list of dicts, got {conds} instead, which is {type(conds)}")
+    #print(f'dict of conds has {l} conditions')
+    for sent in conllu_parse:
+
+        #print(sent, "length", len(sent))
+        n = len(sent)
+        if n<l:
+            #print("sentence too short to check conds")
+
+            break
+        else:
+            #print(f'{l} conditions, {n} len(sent)')
+            for j, token in enumerate(sent):
+                if j >= n-l:
+                    #print(f'{j} position erreicht, word {token}, break loop')
+                    break
+                else:
+                    for i, cond in enumerate(conditions):
+                        #print("checking cond", i, cond, "on token", sent[j+i])
+                        #each cond is a dictionary of conditions to check on one word
+                        if check_conds(sent, sent[j+i], j, cond):
+                            #print(f'***condition {cond} met, token {sent[j+i]}')
+                            if i == len(conditions)-1:
+                                llista.append(token)
+                                count+=1
+                                if printf:
+                                    print(f'\n match in sentence {sent.metadata["sent_id"]}')
+                                    print(sent.metadata["text"])
+                                for k in range(l):
+                                    if printf:
+                                     print(f'{sent[j+k]} fulfills {conditions[k]}')
+                                     print(f'{sent[j+k]} h:{sent[j+k].get("head")} {sent[j+k+1].get("id")}')
+                                     print(sent[j+k])
+                                    pass
+                        else:
+                            break
+
+
+    #return llista
+    return count
+
+
+#returns a list of sentences where a certain condition is met
+#
+def check_conllu_for_conditions_v3(filename, conditions, max_l=100, printf=False, custom_id=False):
+    conllu_parse= file_to_conllu(filename)
+    llista =[]
+    count=0 #counts how many times the conditions are fulfilled in the whole corpus
+    if not isinstance(conditions, list):
+        for conds in conditions:
+            if not isinstance(conds, dict):
+                raise TypeError(f"conditions must be a list of dicts, got {conds} instead, which is {type(conds)}")
+    #print(f'dict of conds has {l} conditions')
+    for num, sent in enumerate(conllu_parse):
+        if len(llista) > max_l:
+            break
+        times=check_sent_for_conditions(sent, conditions, printf)
+        if times:
+            if custom_id:
+                llista.append((times,sent.metadata["custom_sent_id"]))
+            else:
+                llista.append((times, sent.metadata["sent_id"]))
+    return llista
+    #return count
+
+
+#just counts how many times a condition is met in the corpus
+def check_conllu_for_conditions2(filename, conditions, printf=False):
+    conllu_parse= file_to_conllu(filename)
+    llista =[]
+    count=0 #counts how many times the conditions are fulfilled in the whole corpus
+    if not isinstance(conditions, list):
+        for conds in conditions:
+            if not isinstance(conds, dict):
+                print("error this is not a list of dicts")
+                print("conditions:", conditions)
+                print(f'{conds} is a {type(conds)}')
+    #print(f'dict of conds has {l} conditions')
+    for sent in conllu_parse:
+        count= count + check_sent_for_conditions(sent, conditions, printf)
+    #return llista
+    return count
+
+def check_sent_for_conditions(sent, conditions, printf=False):
+    if printf:
+        print(sent, "length", len(sent))
+    # add converting a text sent to a conllu parsed sent
+    n = len(sent)
+    l = len(conditions)
+    counter=0
+    #remove this condition, it is also tested as part of the for loop:
+    #print(f'{l} conditions, {n} len(sent)')
+    for j, token in enumerate(sent):
+        if j >= n-l:
+            return counter
+        else:
+            for i, cond in enumerate(conditions):
+                if printf:
+                    print("\tchecking cond", i, cond, "on token", sent[j+i])
+                #conditions is a list of dictionaries of conditions to check on consecutive words
+                #each cond is a dictionary of conditions to check on one word
+                if check_conds(sent, sent[j+i], j, cond):
+                    #print(f'***condition {cond} met, token {sent[j+i]}')
+                    if i == len(conditions)-1:
+                        llista.append(token)
+                        counter+=1
+                        if printf:
+                            print(f'\n ****match in sentence {sent.metadata["sent_id"]}')
+                            print("\tcontext:",sent.metadata["text"])
+                        for k in range(l):
+                            if printf:
+                             print(f'\ttoken {sent[j+k]} fulfills {conditions[k]}\n')
+                             #print(f'{sent[j+k]} h:{sent[j+k].get("head")} {sent[j+k+1].get("id")}')
+
+                            pass
+                else:
+                    break
+    #print("i am using counter conds rn")
+        #count= counter_conds(conllu_parse, conditions)
+    #return llista
+    return counter
+
+
+#receives two lists of conditions (which are acutally dictionaries of conditions, in the shape:
+# {'#nsubj': [{'deprel': 'nsubj'}], 'nsubj + SV': [{'deprel': 'nsubj', 'head': <function head_greater_than_id at 0x7f054bfffec0>}] }
+#returns a cross product of the intersections between each possible pair of conditions, this is, when both are met
+#nice
+#this is an old function, deprecated!!
+def merge_conds_dicts(condict1, condict2):
+    mega_dict= {}
+    for name1,cond1 in condict1.items():
+        for name2, cond2 in condict2.items():
+            l=[]
+            for c1 in cond1:
+                for c2 in cond2:
+                    # unir condicions
+                    z = c1 | c2
+                    #si hi ha condicions incompatibles s hi afegeix una condicio impossible
+                    for intersecting_keys in set(c1.keys()).intersection(set(c2.keys())):
+                        print("intersecting keys", intersecting_keys)
+                        print("values1:", c1[intersecting_keys], "values2:", c2[intersecting_keys])
+                        if type(c1[intersecting_keys]) is not type(c2[intersecting_keys]):
+                            print("Err when merging condtitions, values not of the same type:")
+                            print("type1:", type(c1[intersecting_keys]))
+                            print("type2:", type(c2[intersecting_keys]))
+                            return {}
+                        elif type(c1[intersecting_keys]) is str or type(c1[intersecting_keys]) is dict:
+                            if c1[intersecting_keys] != c2[intersecting_keys]:
+                                print("****non compatible conditions\n")
+                                print("condition 1\n:", c1[intersecting_keys])
+                                print("condition 2\n:",c2[intersecting_keys])
+                                z = {intersecting_keys:"impossible"}
+                                l.append(z)
+                        #this is the case with conditions such as has_sons : [{"upos": "NOUN", "deprel": "nsubj"}]
+                        # what it should do then is
+                            elif type(c1[intersecting_keys]) is list:
+                                print("ok we re son there")
+                                return 0
+
+                        else:
+                            print("Error, merging conditions of wrong kind, wtf", print(type(c1[intersecting_keys])))
+            mega_dict.update({name1 + "__und__" + name2 : l})
+
+    for cross_name, cross_cond in mega_dict.items():
+        print(cross_name, "::::", cross_cond)
+    return mega_dict
+
+
+
+# this function takes a list of conllu files and prints them together into 1 valid conllu file
+# it also renames the sentences in the list so that the number is coherent
+def conllu_merger(file_list, output_file):
+    mega_conllu = ""
+    macro_conllu_string= ""
+    for file in file_list:
+        if not file.endswith(".conllu"):
+            print(f"error, {file} is not a conllu file yet")
+            return 0
+        try:
+            with open("analysed_corpus/" + file, "r") as f:
+                text = f.read()
+            mega_conllu += text
+        except Exception as e:
+            print(f"error with {file} ", e)
+        else:
+            pass
+    sent_id_counter=0
+    for i, sent in enumerate(parse(mega_conllu)):
+        sent.metadata.update({"sent_id":str(sent_id_counter).zfill(6)})
+        sent_id_counter=sent_id_counter+1
+        macro_conllu_string= macro_conllu_string+sent.serialize()
+    # Path("analysed_corpus/").mkdir(parents=True, exist_ok=True)
+    with open("analysed_corpus/" + output_file, "w") as f:
+        f.write(macro_conllu_string)
+

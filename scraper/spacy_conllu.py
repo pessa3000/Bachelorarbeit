@@ -1,0 +1,156 @@
+#!/usr/bin/env python
+
+#analitza text en catala fent servir l spacy i el guarda en format conllu
+#aquest funcio es pot executar de la manera seguent :D
+# ./spacy_to_conll text.txt > prova_conll.conllu -> ja no,  me n he cansat
+
+import os
+import sys
+import json
+import time
+from conllu import parse
+import spacy
+import re
+
+import spacy_conll
+#receives a text, returns a string ready to print in the conllu format
+def spacy_to_conll(text, lang= "ca"):
+    if lang == "ca":
+        nlp = spacy.load("ca_core_news_trf")
+    nlp.add_pipe("conll_formatter",config={"include_headers": True}, last=True)
+    doc = nlp(text)
+    #print(type(doc))
+    return doc._.conll_str
+
+# function to remove URLS :)
+def remove_urls(text, replacement_text=""):
+    # Define a regex pattern to match URLs
+    url_pattern = re.compile(r'https?://\S+|www\.\S+')
+
+    # Use the sub() method to replace URLs with the specified replacement text
+    text_without_urls = url_pattern.sub(replacement_text, text)
+
+    return text_without_urls
+
+# neteja el text per ajudar l spacy a trobar coses
+# tmabe elimina les preguntes
+def clean_text(content):
+    if content == None:
+        return None
+    # remove urls that appear mostly in Ki texts
+    content = remove_urls(content)
+    # I modified this to keep the quotation marks, let's see :s
+    #list_of_problematic_characters = ["\r", "\t", '"', "“"]
+    list_of_problematic_characters = ["\r", "\t"]
+    for c in list_of_problematic_characters:
+        content = content.replace(c, "")
+    #content = content.replace("”", ".")
+    content = content.replace("\n", " ")
+     #eliminar les preguntes -> eliminatn els signes d exclamació
+    cleaned_content = ""
+    for sentence in content.split("."):
+          #if there is no question mark , we can add them to the text
+        if sentence.find("?") == -1:
+           cleaned_content = cleaned_content + sentence + "."
+        # remove the question
+        else:
+            print("question mark found")
+            print(sentence)
+            cleaned_content = cleaned_content + sentence[sentence.find("?")+1:] + "."
+    #elimina dobles espais, dobles punts
+    for i in range(7):
+        cleaned_content= cleaned_content.replace("  ", " ")
+        cleaned_content= cleaned_content.replace("..", ".")
+
+    return cleaned_content
+
+#old, just works w .txt files, returns .conllu file
+def main(infile, outfile, lang= "ca"):
+    infolder = "data"
+    outfolder = "analysis"
+    os.makedirs(infolder, exist_ok=True)
+    os.makedirs(outfolder, exist_ok=True)
+
+    with open(os.path.join(infolder, infile), "r") as file:
+        content = file.read()
+    content = clean_text(content)
+
+    with open(os.path.join(outfolder, outfile), "w") as f:
+        f.write(spacy_to_conll(content, lang))
+
+#open a list of articles
+#receives as input names of files in data and the name of the desired output file
+# #returns nothing but prints a file with the conllu analysed file:)
+def spacy_pipeline(infile, outfile, printf= True):
+    with open("data/"+infile, "r") as file:
+        article_list=json.load(file)
+    macro_conllu_string=""
+    if printf:
+        t0=time.time()
+        print("***\n"*2,f"Sending {infile} for spacy analysis :)")
+    sent_id_counter = -1
+    titles_list = []
+    for i, article in enumerate(article_list):
+        # checking for repeated articles
+        if "prompt" in article.keys():
+            title = article["prompt"].split("\n")[0]
+        elif "title" in article.keys():
+            title = article["title"]
+        if title in titles_list:
+            print("Possibly duplicate article in infile:", article["prompt"].split(".")[0], "skipping")
+            continue
+            #print(article["prompt"].split(".")[0])
+        titles_list.append(title)
+
+        t1=time.time()
+        if article["QC_text"]:
+            analysed_article=spacy_to_conll(article["QC_text"])
+        else:
+            print("ERR: QC text is empty. Skipping", infile, "article nr", i)
+            continue
+        #print(article["QC_text"])
+        # reopen it using parse to change the metadata
+        # clean the analysed files: delete empty sentences, delete sentences with autonodes or with no root
+        parsed= parse(analysed_article)
+        for num, sentence in enumerate(parsed):
+            sent_id_counter = sent_id_counter + 1
+            #delete empty sentences
+            if not sentence.metadata.get("text"):
+                print("\t\tempty sentence deleted in ", infile, "article nr", i, "nr", num)
+                continue
+            # delete sentences not starting with an uppercase letter
+
+            # delete sentences consisting not at least of two words
+            elif len(sentence.metadata["text"].split(" "))<=1:
+                print("\t\tERR: sentence text,", sentence.metadata["text"], ", is too short.", infile, "article nr", i)
+                continue
+            # delete sentences with autonodes and with no root
+            f1=0; f2=1
+            for token in sentence:
+                if token["head"] == token["id"]:
+                    f1= 1
+                if token["head"] ==0:
+                    f2 = 0
+            if f1 or f2:
+                if printf:
+                    print("\t\tsentence with autonode or no root deleted in ", infile, "article nr", i, "nr", num)
+                continue
+            else:
+                pass
+            #print(article["custom_id"]+"_"+sentence.metadata["sent_id"].zfill(3))
+            #adding some metadata, making sent number coherent in a colection of articles
+            sentence.metadata.update({"sent_id":str(sent_id_counter).zfill(5),"article_id":article["custom_id"], "batch_id":article["batch_id"], "custom_sent_id":article["custom_id"]+"_"+sentence.metadata["sent_id"].zfill(3)})
+
+            #print(sentence.metadata)
+            macro_conllu_string= macro_conllu_string+sentence.serialize()
+        if printf:
+            print(f"\tarticle {i} took {time.time()-t1} seconds, {time.time()-t0}s so far")
+    if printf:
+        print(f"Spacy analysis of {len(article_list)} articles took {time.time()-t0} seconds in total", "\n***"*2)
+    with open("analysed_corpus/"+outfile, "w") as file:
+        file.write(macro_conllu_string)
+
+#this is a relict from the time i executed the code in this file, so i d delete it:
+if __name__ == "__main__":
+    main()
+

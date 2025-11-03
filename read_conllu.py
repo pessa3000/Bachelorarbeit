@@ -1,7 +1,5 @@
 from pyconll import load_from_file
-from spacy_conllu import clean_text
-from spacy_conllu import main as spacy_main
-
+from scraper.spacy_conllu import clean_text
 
 import os
 #arxiu amb eines per comparar anotacions fetes en un arxiu en format conllu :)
