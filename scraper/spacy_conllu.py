@@ -5,7 +5,7 @@
 # ./spacy_to_conll text.txt > prova_conll.conllu -> ja no,  me n he cansat
 
 import os
-import sys
+import glob
 import json
 import time
 from conllu import parse
@@ -196,7 +196,47 @@ def spacy_pipeline(infile, outfile, printf= True):
     with open("analysed_corpus/"+outfile, "w") as file:
         file.write(macro_conllu_string)
 
-#this is a relict from the time i executed the code in this file, so i d delete it:
-if __name__ == "__main__":
-    main()
+
+
+def spacy_analysis_corpus(codi, llista_temes, model):
+    # 1h
+    # Spacy analysis begins
+    done = []
+    n_model = model[0:4]
+    corpus_list = []
+    if isinstance(llista_temes, dict):
+        llista = llista_temes.values()
+    elif isinstance(llista_temes, list):
+        llista = llista_temes
+    else:
+        raise TypeError("llista_temes must be a dictionary or a list!")
+
+    for tema in llista:
+        if not glob.glob(f"data/{codi}tv3_corpus_*_{tema}.json"):
+            raise Exception(f"File for topic {codi}tv3_corpus_*_{tema}.json not found.")
+        elif len(glob.glob(f"data/{codi}tv3_corpus_*_{tema}.json")) > 0:
+            glob.glob(f"data/{codi}tv3_corpus_*_{tema}.json").sort(reverse=True)
+            corpuspath = glob.glob(f"data/{codi}tv3_corpus_*_{tema}.json")[0]
+            corpusfile = corpuspath.split("/")[-1]
+
+        if not glob.glob(f"data/{codi}KI_corpus_*_{tema}_{n_model}.json"):
+            raise Exception(f"File for topic {codi}KI_corpus_*_{tema}_{n_model}.json not found.")
+        elif len(glob.glob(f"data/{codi}KI_corpus_*_{tema}_{n_model}.json")) > 0:
+
+            glob.glob(f"data/{codi}KI_corpus_*_{tema}_{n_model}.json").sort(reverse=True)
+            KIpath = glob.glob(f"data/{codi}KI_corpus_*_{tema}_{n_model}.json")[0]
+            KIfile = KIpath.split("/")[-1]
+
+        corpus_list.append(KIfile)
+        corpus_list.append(corpusfile)
+
+    for infile in corpus_list:
+        outfile = infile.replace(".json", ".conllu")
+        try:
+            spacy_pipeline(infile, outfile)
+            done.append(outfile)
+            print("Spacy analysis printed to", outfile)
+            print("\t files analysed so far:", done)
+        except Exception as e:
+            print("ERROR", e)
 

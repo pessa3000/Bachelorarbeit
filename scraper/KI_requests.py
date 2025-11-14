@@ -3,6 +3,9 @@ import time
 import copy
 import json
 from spacy_conllu import clean_text as clean_text_conllu, remove_urls
+import glob
+from batch_creator import tv3_to_batch
+import os.path
 
 # API configuration
 api_key = '89d3827b18a05873a7112804bc3fa1fb' # SAIA API key, gültig bis märz 25
@@ -207,3 +210,78 @@ def print_completions(chat_completions, filename):
     chat_completions_clean=reestructure_chat_completions(chat_completions)
     with open(filename, "w") as outfile:
         json.dump(chat_completions_clean, outfile, ensure_ascii = False)
+
+# creates the batch file, reads it, etc
+# again codi should be str, llista_temes is a dict
+def KI_corpus_generator(codi, llista_temes, model):
+    n_model = model[0:4]
+    # generate batch file
+    corpus_list = []
+    t0 = time.time()
+    for tema in llista_temes.keys():
+        print(tema)
+        # read the data file
+        if not glob.glob(f"data/{codi}tv3_corpus_*_{tema}.json"):
+            raise Exception(f"File for topic {codi}tv3_corpus_*_{tema}.json not found.")
+        else:
+            if not len(glob.glob(f"data/{codi}tv3_corpus_*_{tema}.json")) >= 1:
+                raise Exception("what is going on?")
+            tematic_jsons = glob.glob(f"data/{codi}tv3_corpus_*_{tema}.json")
+            print(tematic_jsons)
+            tematic_jsons.sort(reverse=True)
+            corpuspath = tematic_jsons[0]
+            corpusfile = corpuspath.split("/")[-1]
+
+            if len(glob.glob(f"data/{codi}tv3_corpus_*_{tema}.json")) > 1:
+                print("ACHTUNG mehrere files zum thema", tema, tematic_jsons)
+                print("picked", corpusfile)
+
+
+        # corpusfile=f"{codi}tv3_corpus_{len(scraped_data)}_{tema}.json"
+        # corpuspath= "data/"+corpusfile
+        with open(corpuspath, "r") as f:
+            scraped_data = json.load(f)
+        batchfile = f'batch-prompts_{len(scraped_data)}_{tema}.jsonl'
+        batchpath = "data/" + batchfile
+
+        if os.path.isfile(corpuspath):
+            tv3_to_batch(corpuspath, batchpath)
+
+        # ask KI to generate parallel corpus from the prompts in the jsonl batchfile
+        printf = True
+        value = 0  # this will be deleted, KI never sleeps, AI rate never exceeded
+        t1 = time.time()
+        if printf:
+            print("*" * 16)
+            print("Generating answers to topic", tema)
+            print("*" * 16)
+
+        prompts = batch_reader(batchpath)
+        l = len(prompts)
+        llm_answers = ask_llm(prompts, llm_model=model, waiting_time=True, max_queries=l, value=value)
+
+        KIfile = f"{codi}KI_corpus_{len(llm_answers)}_{tema}_{n_model}.json"
+        KIpath = "data/" + KIfile
+        corpus_list.append(KIfile)
+        if printf:
+            print("*" * 16)
+            print(f"Time for {tema} iteration: ", (time.time() - t1) / 3600, "hours")
+            print("av. time per prompt:", (time.time() - t1) / (1 + len(prompts)), "s")
+            print("Total time so far", (time.time() - t0) / 3600, "hours")
+            print("#prompts:", len(prompts), "#answers:", len(llm_answers))
+            print("*" * 16)
+        # giving the answers list of dictionary structure
+        chat_completions_clean = reestructure_chat_completions(llm_answers)
+        # cleaning the answers
+        for i, completion in enumerate(chat_completions_clean):
+            # cleaning step specific to AI
+            mid_clean_text = KI_text_cleaner(completion["text"])
+            # general cleaning step, common with scraped news
+            completion["QC_text"] = clean_text_conllu(mid_clean_text)
+
+        # printing the answers
+        with open(KIpath, "w") as outfile:
+            json.dump(chat_completions_clean, outfile, ensure_ascii=False)
+
+        # old: print_completions(llm_answers, KIpath)
+        print("saving to: ", KIpath)

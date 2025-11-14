@@ -9,10 +9,15 @@ from bs4 import BeautifulSoup
 import requests
 import json
 import html
-from time import strftime, localtime
+from time import strftime, localtime,  gmtime
 import time
+
+from sympy.codegen.ast import Raise
+
 from spacy_conllu import clean_text as clean_text_conllu
 import emoji
+
+
 
 #this is the adapted scraper for the post 17.09.25 tv3 layout
 def article_scraper(article_url):
@@ -352,3 +357,33 @@ def tv3_pipeline(tema, desired_articles, pages_to_check, last_page=100):
     # purge out news whose clean version is under 100 words
     #data_list = [data_set for data_set in data_list if len(data_set["QC_text"].split(" ")) > 100]
     return data_list
+
+
+# def scraper
+# llista temes is a dictionary of the kind {"meteorologia":325}, this is, topic + starting page
+# desired articles and pages to check are positive int, pages to check is a multiple of 10 and bigger than 10*desired articles
+# codi is a string
+def tv3_scraper(codi, llista_temes, desired_articles, pages_to_check):
+    if not isinstance(llista_temes, dict):
+        raise TypeError("llista_temes must be a dictionary")
+    if not isinstance(desired_articles, int) or desired_articles <= 0:
+        raise TypeError("desired_articles must be a positive integer")
+    if not isinstance(pages_to_check, int) or pages_to_check <= 0:
+        raise TypeError("pages_to_check must be a positive integer")
+    codi = str(codi)
+
+    t0 = time.time()
+    start_date = strftime("%Y-%m-%d %H:%M:%S", gmtime())
+    # ask for the tv3 data, print the tv3 data
+    print("Starting at ", start_date)
+    for tema, l_page in llista_temes.items():
+        scraped_data = tv3_pipeline(tema, desired_articles, pages_to_check)
+        corpusfile = f"{codi}tv3_corpus_{len(scraped_data)}_{tema}.json"
+        corpuspath = "data/" + corpusfile
+        # corpus_list.append(corpusfile)
+        # print the tv3 corpus file
+        with open(corpuspath, "w") as f:
+            print("Printing to", corpuspath)
+            json.dump(scraped_data, f)
+    print("Finished in ", time.time() - t0)
+    return 0
