@@ -521,7 +521,7 @@ def check_conllu_for_conditions2(filename, conditions, printf=False):
 
 def check_sent_for_conditions(sent, conditions, printf=False):
     if printf:
-        print(sent, "length", len(sent))
+        print(sent.metadata["text"], "length", len(sent))
     # add converting a text sent to a conllu parsed sent
     n = len(sent)
     l = len(conditions)
@@ -536,7 +536,7 @@ def check_sent_for_conditions(sent, conditions, printf=False):
         else:
             for i, cond in enumerate(conditions):
                 if printf:
-                    print("\tchecking cond", i, cond, "on token", sent[j+i])
+                    print("\tchecking cond", i, "on token", sent[j+i].get("form"))
                 #conditions is a list of dictionaries of conditions to check on consecutive words
                 #each cond is a dictionary of conditions to check on one word
                 if check_conds(sent, sent[j+i], j, cond):
@@ -545,15 +545,17 @@ def check_sent_for_conditions(sent, conditions, printf=False):
                         llista.append(token)
                         counter+=1
                         if printf:
-                            print(f'\n ****match in sentence {sent.metadata["sent_id"]}')
-                            print("\tcontext:",sent.metadata["text"])
+                            print(f'\t\t ****match in sentence {sent.metadata["sent_id"]}')
+                            print("\t\tcontext:",sent.metadata["text"])
                         for k in range(l):
                             if printf:
-                             print(f'\ttoken {sent[j+k]} fulfills {conditions[k]}\n')
+                             print(f'\ttoken {sent[j+k].get("form")} fulfills {conditions[k]}\n')
                              #print(f'{sent[j+k]} h:{sent[j+k].get("head")} {sent[j+k+1].get("id")}')
 
                             pass
                 else:
+                    if printf:
+                        print(f'\t\ttoken {sent[j+i]["form"]} doesnt fulfill {cond}')
                     break
     #print("i am using counter conds rn")
         #count= counter_conds(conllu_parse, conditions)
