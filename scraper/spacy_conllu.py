@@ -11,6 +11,7 @@ import time
 from conllu import parse
 import spacy
 import re
+from fast_langdetect import detect
 
 import spacy_conll
 #receives a text, returns a string ready to print in the conllu format
@@ -34,6 +35,7 @@ def remove_urls(text, replacement_text=""):
 
 # neteja el text per ajudar l spacy a trobar coses
 # tmabe elimina les preguntes
+# es fa servir en tots dos articles
 def clean_text(content):
     if content == None:
         return None
@@ -45,18 +47,61 @@ def clean_text(content):
     for c in list_of_problematic_characters:
         content = content.replace(c, "")
     #content = content.replace("”", ".")
+    #paragraph check
+    for paragraph in content.split("\n"):
+        if not paragraph:
+            continue
+        #paragraph = paragraph.strip()
+        # HERE THE ENGLISH CHECK
+        if detect(paragraph, model='lite', k=1)[0]["lang"] == "ca":
+            flag = 0
+        else:
+            flag = 1
+            for guess in detect(paragraph, model='full', k=3):
+                if "ca" == guess["lang"] and guess["score"] > 0.1:
+                    # print("suspicious but catalan", sentence)
+                    # print(guess)
+                    flag = 0
+                    print("\t low confidence catalan paragraph", paragraph)
+                    break
+                else:
+                    pass
+            # print("eing", sentence)
+        if flag == 1:
+            print("\t removing non catalan sentence:'", paragraph, "'")
+            # print(detect(sentence, model='lite', k=3))
+            continue
+    # paragraphs are removed from here on:
     content = content.replace("\n", " ")
+    for i in range(10):
+        content=content.replace("  ", " ")
      #eliminar les preguntes -> eliminatn els signes d exclamació
     cleaned_content = ""
-    for sentence in content.split("."):
-          #if there is no question mark , we can add them to the text
+    for sentence in content.split(". "):
+        flag = 0
+        if len(sentence) <=2:
+            continue
+        forbidden_characters= ["#", "="]
+        for character in forbidden_characters:
+            if sentence.find(character) != -1:
+                flag=1
+
+        # desperate attempt to save the good ":"
+        if sentence.find(":") != -1:
+            if len(sentence.split(":")[0].split(" ")) <=2:
+                print("skipping problematic : ", sentence)
+                continue
+        if flag ==1:
+            #print(f"{character} found in {sentence}")
+            continue
+            #check for question marks (different since they can replace .)
         if sentence.find("?") == -1:
-           cleaned_content = cleaned_content + sentence + "."
+           cleaned_content = cleaned_content + sentence + ". "
         # remove the question
         else:
             print("question mark found")
             print(sentence)
-            cleaned_content = cleaned_content + sentence[sentence.find("?")+1:] + "."
+            cleaned_content = cleaned_content + sentence[sentence.find("?")+1:] + ". "
     #elimina dobles espais, dobles punts
     for i in range(7):
         cleaned_content= cleaned_content.replace("  ", " ")
@@ -104,6 +149,7 @@ def spacy_pipeline(infile, outfile, printf= True):
 
         t1=time.time()
         if article["QC_text"]:
+            #print(article["QC_text"])
             analysed_article=spacy_to_conll(article["QC_text"])
         else:
             print("ERR: QC text is empty. Skipping", infile, "article nr", i)
@@ -122,7 +168,7 @@ def spacy_pipeline(infile, outfile, printf= True):
 
             # delete sentences consisting not at least of two words
             elif len(sentence.metadata["text"].split(" "))<=1:
-                print("\t\tERR: sentence text,", sentence.metadata["text"], ", is too short.", infile, "article nr", i)
+                print("\t\t Sentence text,", sentence.metadata["text"], ", is too short.", infile, "skipping article nr", i)
                 continue
             # delete sentences with autonodes and with no root
             f1=0; f2=1

@@ -22,7 +22,7 @@ def check_conds(sent, token, index, conds):
     if not isinstance(conds, dict):
         print("error this is not a dict", conds, type(conds))
         raise TypeError(f"Only dicts are allowed, got {conds} instead, which is {type(conds)}")
-        return 1
+
     #all_met = all(token.get(k) == v for k, v in conds.items()) #this will have to become complicated
     for k, v in conds.items():
         #if it is a normal condition, check if it is false
@@ -144,7 +144,7 @@ def merge_conditions_dicts(d1, d2):
     z = {}
     # checking if conditions are repeated
     intersecting_keys = set(d1.keys()).intersection(set(d2.keys()))
-    print("intersecting keys:", intersecting_keys)
+    #print("intersecting keys:", intersecting_keys)
     for key in intersecting_keys:
         # case 0: value types not matching
         if type(d1[key]) != type(d2[key]):
@@ -160,7 +160,7 @@ def merge_conditions_dicts(d1, d2):
                 z[key] = d1[key]
         #case 2: value is a dict (ex. {parent_is : {}}; or feats_include : {} )
         elif type(d1[key]) is dict:
-            print("attempting to merge nested dict")
+            # print("attempting to merge nested dict")
             z[key] = merge_conditions_dicts(d1[key], d2[key])
         # case 3: value is a list
         # we just append lists and the function preceding them will decide what to do with them
@@ -169,13 +169,13 @@ def merge_conditions_dicts(d1, d2):
         else:
             print("we re trying to merge dicts and dont know what is going on", type(d1[key]))
     # regarding other keys, they will be just appended to z
-    print("adding non intersecting keys")
+    # print("adding non intersecting keys")
     for key in list(set(d1.keys()) -set(d1.keys()).intersection(set(d2.keys()))):
         z[key] = d1[key]
-        print(key, z[key])
+        #print(key, z[key])
     for key in set(d2.keys()) -set(d2.keys()).intersection(set(d1.keys())):
         z[key] = d2[key]
-        print(key, z[key])
+        #print(key, z[key])
     return z
 
 
@@ -184,9 +184,13 @@ def merge_conditions_dicts(d1, d2):
 # It receives "evals":
 # EX: l4 = {"l4": [c4]}, where c4 is a dictionary of conditions
 def merge_evals(condict1, condict2):
-    print(f"merging:\n {condict1}\n and:\n {condict2}")
+    #print(f"merging:\n {condict1}\n and:\n {condict2}")
     #print("dict2", condict2, "\n")
     mega_dict= {}
+    if not condict1 or not condict2:
+        #print("error one of the evals is empty")
+        #print(condict1, condict2)
+        return 0
     for name1,cond1 in condict1.items():
         for name2, cond2 in condict2.items():
             #print(name1, cond1)
@@ -196,8 +200,9 @@ def merge_evals(condict1, condict2):
             z = merge_conditions_dicts(condy1, condy2)
             #making z a stupid list of dicts again sigh
             mega_dict.update({name1 + "__UND__" + name2 : [z]})
-    for cross_name, cross_cond in mega_dict.items():
-        print("RESULT:", cross_name, "::::", cross_cond, "\n")
+    #for cross_name, cross_cond in mega_dict.items():
+        #print("RESULT:", cross_name, "::::", cross_cond, "\n")
+
     return mega_dict
 
 # same workings as has_no_sons
@@ -277,8 +282,8 @@ def head_greater_than_id(sent, token, index, k):
         return False
 
 def no_weak_pronoun(sent, token, index, k):
-    pron_list= {"hi", "en", "el", "se", "nos", "ho", "lo", "n’", "s’", "ne"}
-    if token.get('lemma') in pron_list:
+    pron_list= {"hi", "en", "n’", "ne", "me", "te", "el", "la", "se", "nos", "vos", "li", "ho", "lo",  "s’", "els", "los", "ser"}
+    if token.get('lemma') in pron_list and token.get("upos") == "PRON":
         return False
     else:
         #print(token, token.get('lemma'))
@@ -300,14 +305,94 @@ def is_sub_clause_head(sent, token, index, k):
     else:
         return False
 
+# condition on the object, such that, if there's subj, and SO, true
+# idea: rewrite it as a function of the verb
+def v_SO(sent, token, index, k):
+    #definitons
+    conds_obj_good = [{"deprel": "obj", "lemma": no_weak_pronoun, is_not_any_of: [{feats_include: {"PronType": "Rel"}},{"upos": "ADP"}, {"upos":"ADJ"},{"upos":"ADV"}] , has_no_sons: [{"upos": "ADP"}, {"deprel": "case"}, {"deprel": "cop"}, {"deprel": "mark"}]}]
+    conds_wsubj_true = [{"deprel": "nsubj", "lemma": no_weak_pronoun, is_not: {feats_include: {"PronType": "Rel"}}, has_no_son: {"deprel": "cop"}}]
 
-def is_not_nominal_complement(sent, token, index, k):
-    not_nominal_deprels= [""]
-    deprel_list = ['det', 'nsubj', 'case', 'obj',  'ROOT', 'mark', 'obl',  'cc',  'punct',  'aux', 'ccomp', 'advmod', 'fixed', 'acl', 'nummod', 'cop', 'advcl', 'expl:pass', 'xcomp', 'csubj', 'iobj', 'parataxis', 'dep']
+    if token.get("upos") != "VERB":
+        return False
+        # search for subject
+    #print("SO_VERB", token.get("form"))
+    subj=0
+    obj=0
+    for word in sent:
+        if word.get("head") == token.get("id"):
+            # print("a", word.get("form"))
+            if check_conds(sent, word, word.get("id") - 1, conds_wsubj_true[0]):
+                subj= word
+                # print("subj:", subj.get("form"))
+                break
+            else:
+                pass
+    if not subj:
+        # print("nosubj")
+        return False
+    # search for object
+    for word in sent:
+        if word.get("head") == token.get("id"):
+            # print("b:", word.get("form"))
+            if check_conds(sent, word, word.get("id") - 1, conds_obj_good[0]):
+                obj = word
+                # print("obj:", obj.get("form"))
+                break
+            else:
+                pass
+    if not obj:
+        return False
+    # print(sent.metadata.get("text"))
+    # print(obj.get("id"),subj.get("id"))
+    if obj.get("id")>subj.get("id"):
+        # print(f"subj: {subj.get('form')} obj:{obj.get('form')}, verb:{token.get('form')}")
+        # print("subj comes before object, SO")
+        return True
+    else:
+        return False
 
-# achtung this deprels are only like that if it CAN be a nominal component
-def is_nominal_complement(sent, token, index, k):
-    nominal_deprels = ['amod', 'det', 'flat', 'compound', 'conj',  'appos', 'nmod',]
+def v_OS(sent, token, index, k):
+    #definitons
+    conds_obj_good = [{"deprel": "obj", "lemma": no_weak_pronoun, is_not_any_of: [{feats_include: {"PronType": "Rel"}},{"upos": "ADP"}, {"upos":"ADJ"}, {"upos":"ADV"}] , has_no_sons: [{"upos": "ADP"}, {"deprel": "case"}, {"deprel": "cop"}, {"deprel": "mark"}]}]
+    conds_wsubj_true = [{"deprel": "nsubj", "lemma": no_weak_pronoun, is_not: {feats_include: {"PronType": "Rel"}}, has_no_son: {"deprel": "cop"}}]
+
+    if token.get("upos") != "VERB":
+        return False
+        # search for subject
+    # print("OS_VERB", token.get("form"))
+    subj=0
+    obj=0
+    for word in sent:
+        if word.get("head") == token.get("id"):
+            # print("a", word.get("form"))
+            if check_conds(sent, word, word.get("id") - 1, conds_wsubj_true[0]):
+                subj= word
+                #print("subj:", subj.get("form"))
+                break
+            else:
+                pass
+    if not subj:
+        # print("nosubj")
+        return False
+    # search for object
+    for word in sent:
+        if word.get("head") == token.get("id"):
+            # print("b:", word.get("form"))
+            if check_conds(sent, word, word.get("id") - 1, conds_obj_good[0]):
+                obj = word
+                # print("obj:", obj.get("form"))
+                break
+            else:
+                pass
+    if not obj:
+        return False
+    # print(sent.metadata.get("text"))
+    if obj.get("id")<subj.get("id"):
+        # print(f"subj: {subj.get('form')} obj:{obj.get('form')}, verb:{token.get('form')}")
+        # print("obj comes before subj, OS")
+        return True
+    else:
+        return False
 
 
 
@@ -444,6 +529,8 @@ def check_sent_for_conditions(sent, conditions, printf=False):
     #remove this condition, it is also tested as part of the for loop:
     #print(f'{l} conditions, {n} len(sent)')
     for j, token in enumerate(sent):
+        if printf:
+            print(token.get("form"))
         if j >= n-l:
             return counter
         else:
