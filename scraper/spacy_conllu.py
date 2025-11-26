@@ -13,15 +13,6 @@ import spacy
 import re
 from fast_langdetect import detect
 
-import spacy_conll
-#receives a text, returns a string ready to print in the conllu format
-def spacy_to_conll(text, lang= "ca"):
-    if lang == "ca":
-        nlp = spacy.load("ca_core_news_trf")
-    nlp.add_pipe("conll_formatter",config={"include_headers": True}, last=True)
-    doc = nlp(text)
-    #print(type(doc))
-    return doc._.conll_str
 
 # function to remove URLS :)
 def remove_urls(text, replacement_text=""):
@@ -32,6 +23,43 @@ def remove_urls(text, replacement_text=""):
     text_without_urls = url_pattern.sub(replacement_text, text)
 
     return text_without_urls
+
+
+#import spacy_conll
+#receives a text, returns a string ready to print in the conllu format
+def spacy_to_conll(text, lang= "ca"):
+    if lang == "ca":
+        nlp = spacy.load("ca_core_news_trf")
+    nlp.add_pipe("conll_formatter",config={"include_headers": True}, last=True)
+    doc = nlp(text)
+    #print(type(doc))
+    return doc._.conll_str
+
+
+
+
+# returns a list of the repeated sentences in a text
+def repeated_sentences_finder_text(text):
+    l = text.split(". ")
+    l = sorted(l)
+    # sents= sorted({k: v for k, v in sorted(dic.items(), key=lambda item: item[1])})
+    l_repeated = []
+    c = 0
+    repetitions = {}
+    for i, item in enumerate(l):
+        # print(item)
+        if l[i] == l[i - 1] and l[i] != l[i - 2]:
+            # print(l[i], "\n", l[i-1])
+            l_repeated.append(l[i])
+            l_repeated.append(l[i - 1])
+            c = c + 2
+        elif l[i] == l[i - 1] and l[i] == l[i - 2]:
+            l_repeated.append(l[i])
+            c= c+1
+
+    #print(f"\t\tTotal sents{len(l)}, repeated {c}, {100 * c / len(l)} %")
+    return l_repeated
+
 
 # neteja el text per ajudar l spacy a trobar coses
 # tmabe elimina les preguntes
@@ -48,6 +76,7 @@ def clean_text(content):
         content = content.replace(c, "")
     #content = content.replace("”", ".")
     #paragraph check
+    content2= ""
     for paragraph in content.split("\n"):
         if not paragraph:
             continue
@@ -59,7 +88,7 @@ def clean_text(content):
             flag = 1
             for guess in detect(paragraph, model='full', k=3):
                 if "ca" == guess["lang"] and guess["score"] > 0.1:
-                    # print("suspicious but catalan", sentence)
+                    #print("suspicious but catalan", sentence)
                     # print(guess)
                     flag = 0
                     print("\t low confidence catalan paragraph", paragraph)
@@ -71,6 +100,12 @@ def clean_text(content):
             print("\t removing non catalan sentence:'", paragraph, "'")
             # print(detect(sentence, model='lite', k=3))
             continue
+        else:
+            if not content2:
+                content2 = paragraph
+            else:
+                content2 = content2 + "\n" + paragraph
+    content= content2
     # paragraphs are removed from here on:
     content = content.replace("\n", " ")
     for i in range(10):
@@ -136,6 +171,7 @@ def spacy_pipeline(infile, outfile, printf= True):
     sent_id_counter = -1
     titles_list = []
     for i, article in enumerate(article_list):
+        print("Spacy analysing article", i)
         # checking for repeated articles
         if "prompt" in article.keys():
             title = article["prompt"].split("\n")[0]
@@ -146,14 +182,20 @@ def spacy_pipeline(infile, outfile, printf= True):
             continue
             #print(article["prompt"].split(".")[0])
         titles_list.append(title)
+        # checking if article is empty
+        if not article["QC_text"]:
+            print("\tERR: QC text is empty. Skipping", infile, "article nr", i)
+            continue
+
+        # checking if article is AI slop
+        if len(repeated_sentences_finder_text(article["QC_text"])) > 0.1 * len(article["QC_text"].split(". ")):
+            print(f'Ai slop detected, {100 * len(repeated_sentences_finder_text(article["QC_text"])) / len(article["QC_text"].split(". "))}% of repeated sentences. SKipping')
+            continue
 
         t1=time.time()
-        if article["QC_text"]:
-            #print(article["QC_text"])
-            analysed_article=spacy_to_conll(article["QC_text"])
-        else:
-            print("ERR: QC text is empty. Skipping", infile, "article nr", i)
-            continue
+
+        analysed_article=spacy_to_conll(article["QC_text"])
+
         #print(article["QC_text"])
         # reopen it using parse to change the metadata
         # clean the analysed files: delete empty sentences, delete sentences with autonodes or with no root
@@ -186,7 +228,8 @@ def spacy_pipeline(infile, outfile, printf= True):
             #print(article["custom_id"]+"_"+sentence.metadata["sent_id"].zfill(3))
             #adding some metadata, making sent number coherent in a colection of articles
             sentence.metadata.update({"sent_id":str(sent_id_counter).zfill(5),"article_id":article["custom_id"], "batch_id":article["batch_id"], "custom_sent_id":article["custom_id"]+"_"+sentence.metadata["sent_id"].zfill(3)})
-
+            sentence.metadata.update({"filename":infile})
+            sentence.metadata.update({"url":article["url"]})
             #print(sentence.metadata)
             macro_conllu_string= macro_conllu_string+sentence.serialize()
         if printf:
@@ -202,10 +245,10 @@ def spacy_analysis_corpus(codi, llista_temes, model):
     # 1h
     # Spacy analysis begins
     done = []
-    n_model = model[0:4]
+    n_model = model
     corpus_list = []
     if isinstance(llista_temes, dict):
-        llista = llista_temes.values()
+        llista = llista_temes.keys()
     elif isinstance(llista_temes, list):
         llista = llista_temes
     else:

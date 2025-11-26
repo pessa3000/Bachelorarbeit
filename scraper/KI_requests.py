@@ -6,6 +6,7 @@ from spacy_conllu import clean_text as clean_text_conllu, remove_urls
 import glob
 from batch_creator import tv3_to_batch
 import os.path
+import html
 
 # API configuration
 api_key = '89d3827b18a05873a7112804bc3fa1fb' # SAIA API key, gültig bis märz 25
@@ -29,9 +30,10 @@ def batch_reader(filename):
             did["prompt"]=entrada["body"]["input"]
             did["max_tokens"]= entrada["max_tokens"]
             #did["invented"] = "fun"
-            #did["url"]= entrada["url"]
+            did["url"]= entrada["url"]
             did["custom_id"]=entrada["custom_id"]
             did["batch_id"] = entrada["batch_id"]
+            did["model"]= entrada["body"]["model"]
             #prompts.append(json.loads(entry))
             prompts.append(did)
     return prompts
@@ -56,18 +58,20 @@ models_bons= ["llama-3.3-70b-instruct", "gemma-3-27b-it", "mistral-large-instruc
 
 # makes a series of queries to the llm_model
 # returns a list of dicts, 
-def ask_llm(prompts, llm_model, max_queries, value, waiting_time=False, printf=True):
+def ask_llm(prompts, max_queries, value, waiting_time=False, printf=True):
     chat_completions =[]
     t0 = time.time()
     n= min(len(prompts), max_queries)
     for i in range(n):
         prompts_filtered =  {k: v for k, v in prompts[i].items() if "id" not in k}
-        #print(prompts_filtered)
+        del prompts_filtered["url"]
         #answer= {}
         t1= time.time()
         try:
-            print(f"Trying query nr {i}: \n {prompts_filtered} with {llm_model}")
-            answer=dict(client.completions.create(**prompts_filtered, model= llm_model))
+
+            print(f"Trying query nr {i}: \n {prompts_filtered}")
+            #answer=dict(client.completions.create(**prompts_filtered, model= llm_model))
+            answer = dict(client.completions.create(**prompts_filtered))
         except Exception as e:
             print(f"Query nr {i} failed.")
             print(e)
@@ -77,7 +81,7 @@ def ask_llm(prompts, llm_model, max_queries, value, waiting_time=False, printf=T
                 time.sleep(60)
                 #chat_completions.append(client.completions.create(**prompts[i], model= llm_model))
                 new_list= [prompts[i]]
-                ask_llm(new_list, llm_model, max_queries, value, waiting_time=True, printf=True)
+                ask_llm(new_list, max_queries, value, waiting_time=True, printf=True)
                 print("nr of times slept:", value)
                 if value >= 2:
                     print("KI is not responding")
@@ -100,10 +104,7 @@ def reestructure_chat_completions(chat_completions):
         completion.pop("choices")
         completion.update(dict(completion["usage"]))
         completion.pop("usage")
-        mid_clean_text=KI_text_cleaner(completion["text"])
-        completion["QC_text"]= clean_text_conllu(mid_clean_text)
-        if not completion["QC_text"]:
-            print(f"KI completion {i} empty after cleaning")
+        completion["QC_text"]= ""
     return chat_completions_clean
 
 #remove annoying headers and titles, also ensure that there is no incomplete sentence at the end
@@ -114,32 +115,27 @@ def reestructure_chat_completions(chat_completions):
 # also removes every sentence that includes "\n*"
 def KI_text_cleaner(text):
 
+    text = html.unescape(html.unescape(text))
     if not isinstance(text, str):
         print("error, KI answer is not a string")
         return ""
     else:
         cleaned_text1 = ""
-        print("len is", len(text.split("\n")))
         # elimina titols
         for i, paragraph in enumerate(text.split("\n")):
-            print(i, paragraph)
+            #print(i, paragraph)
             if not paragraph:
-                print("1 skipped '", paragraph, "'")
+                #print("1 skipped '", paragraph, "'")
                 continue
             if len(paragraph.strip()) < 2:
-                print("1.5 skipped '", paragraph, "'")
+                #print("1.5 skipped '", paragraph, "'")
                 continue
             if paragraph.strip()[-1].isalnum() or paragraph.strip()[-1] == ":":
-                print("2skipped '", paragraph, "'")
+                #print("2skipped '", paragraph, "'")
                 continue
-            # deleting the last sentence of the paragraph
-            forbidden_last_characters= [":", "!"]
-            for char in forbidden_last_characters:
-                if char in paragraph.strip():
-                    print("popped", paragraph.split(". ").pop())
 
             if paragraph.strip()[1] == "*":
-                print("3skipped '", paragraph, "'")
+                #print("3skipped '", paragraph, "'")
                 continue
             # else add the paragraph
             # PARAGRAPHS ARE PRESERVED
@@ -147,7 +143,7 @@ def KI_text_cleaner(text):
                 cleaned_text1 = paragraph
             else:
                 cleaned_text1 = cleaned_text1 + "\n" + paragraph
-                print(i, paragraph)
+                #print(i, paragraph)
         cleaned_text = cleaned_text1
         #remove urls
         text= remove_urls(cleaned_text1)
@@ -175,10 +171,10 @@ def KI_text_cleaner(text):
         cleaned_text2=""
         # Elimina possibles enumeracions
         # filter all problematic combinations of characters that identify KI bad sentences
-        problematic_chars = [":",  "Font:", "EFE", "font:", "ACN", "Enllaç:", "enllaç:", "El Punt Avui", "Vilaweb", "/", "*", "?", "preguntes:"]
+        problematic_chars = [":", "!", "]", "/", "*", "?","EFE", "ACN","El Punt Avui", "Vilaweb",  "preguntes:"]
         for sentence in cleaned_text.split(". "):
             if bool("(" in sentence) ^ bool(")" in sentence):
-                print("uncomplete parenthesis foung: ", sentence)
+                print("uncomplete parenthesis found: ", sentence)
                 break
             flag=0
             for char in problematic_chars:
@@ -204,18 +200,24 @@ def KI_text_cleaner(text):
         #cleaned_text2= clean_text_conllu(cleaned_text2)
         return cleaned_text2
 
-        
+
+
+
+
 #enters one complex answers dict, cleans it and prints a 1-level dictionary ouptput to json 
 def print_completions(chat_completions, filename):
     chat_completions_clean=reestructure_chat_completions(chat_completions)
     with open(filename, "w") as outfile:
         json.dump(chat_completions_clean, outfile, ensure_ascii = False)
 
+
+
 # creates the batch file, reads it, etc
 # again codi should be str, llista_temes is a dict
 def KI_corpus_generator(codi, llista_temes, model):
-    n_model = model[0:4]
-    # generate batch file
+    n_model = model
+
+    # 1- generate batch file
     corpus_list = []
     t0 = time.time()
     for tema in llista_temes.keys():
@@ -245,9 +247,9 @@ def KI_corpus_generator(codi, llista_temes, model):
         batchpath = "data/" + batchfile
 
         if os.path.isfile(corpuspath):
-            tv3_to_batch(corpuspath, batchpath)
+            tv3_to_batch(corpuspath, batchpath, model)
 
-        # ask KI to generate parallel corpus from the prompts in the jsonl batchfile
+        # 2 ask KI to generate parallel corpus from the prompts in the jsonl batchfile
         printf = True
         value = 0  # this will be deleted, KI never sleeps, AI rate never exceeded
         t1 = time.time()
@@ -258,7 +260,7 @@ def KI_corpus_generator(codi, llista_temes, model):
 
         prompts = batch_reader(batchpath)
         l = len(prompts)
-        llm_answers = ask_llm(prompts, llm_model=model, waiting_time=True, max_queries=l, value=value)
+        llm_answers = ask_llm(prompts, waiting_time=False, max_queries=l, value=value)
 
         KIfile = f"{codi}KI_corpus_{len(llm_answers)}_{tema}_{n_model}.json"
         KIpath = "data/" + KIfile
@@ -276,12 +278,15 @@ def KI_corpus_generator(codi, llista_temes, model):
         for i, completion in enumerate(chat_completions_clean):
             # cleaning step specific to AI
             mid_clean_text = KI_text_cleaner(completion["text"])
+            
             # general cleaning step, common with scraped news
             completion["QC_text"] = clean_text_conllu(mid_clean_text)
+            if not completion["QC_text"]:
+                print("cleaning KI text made it empty")
+                continue
 
         # printing the answers
         with open(KIpath, "w") as outfile:
             json.dump(chat_completions_clean, outfile, ensure_ascii=False)
 
-        # old: print_completions(llm_answers, KIpath)
         print("saving to: ", KIpath)

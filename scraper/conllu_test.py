@@ -611,7 +611,7 @@ def merge_conds_dicts(condict1, condict2):
 
 # this function takes a list of conllu files and prints them together into 1 valid conllu file
 # it also renames the sentences in the list so that the number is coherent
-def conllu_merger(file_list, output_file):
+def conllu_merger(file_list, output_file, repeated_articles= False):
     mega_conllu = ""
     macro_conllu_string= ""
     for file in file_list:
@@ -627,10 +627,49 @@ def conllu_merger(file_list, output_file):
         else:
             pass
     sent_id_counter=0
-    for i, sent in enumerate(parse(mega_conllu)):
-        sent.metadata.update({"sent_id":str(sent_id_counter).zfill(6)})
-        sent_id_counter=sent_id_counter+1
-        macro_conllu_string= macro_conllu_string+sent.serialize()
+    unique_url_pairs=[]
+    all_pairs = []
+    total_counter=0
+    unique_counter=0
+    if not repeated_articles:
+        for i, sent in enumerate(parse(mega_conllu)):
+            first=0
+            # CHECKING FOR REPEATED ARTICLES
+            if not "url" in sent.metadata.keys():
+                print("URL info missing, can't check for repeated articles")
+                break
+            else:
+                pair = (sent.metadata["url"], sent.metadata["article_id"])
+                # tenim aquesta url en general?
+                if pair not in all_pairs:
+                    total_counter += 1
+                    first =1
+                    all_pairs.append(pair)
+                # si l url no la tnim encara, afegim el parell
+                if pair[0] not in [item[0] for item in unique_url_pairs]:
+                    unique_url_pairs.append(pair)
+                    unique_counter += 1
+                # si el parell no es el primer cop q hi ha la url
+                if pair not in unique_url_pairs:
+                    if first:
+                        for item in all_pairs:
+                            if pair[0] == item[0] and pair[1] != item[1]:
+                                print(f"url {pair[0]}, both under {pair[1]} and {item[1]}\n")
+                    continue
+                else:
+                    sent.metadata.update({"sent_id": str(sent_id_counter).zfill(6)})
+                    sent_id_counter = sent_id_counter + 1
+                    macro_conllu_string = macro_conllu_string + sent.serialize()
+
+
+    else:
+        print("we re allowing repeated articles")
+        for i, sent in enumerate(parse(mega_conllu)):
+            sent.metadata.update({"sent_id": str(sent_id_counter).zfill(6)})
+            sent_id_counter = sent_id_counter + 1
+            macro_conllu_string = macro_conllu_string + sent.serialize()
+    print("Total nr of articles", total_counter, "total nr of unique articles", unique_counter)
+
     # Path("analysed_corpus/").mkdir(parents=True, exist_ok=True)
     with open("analysed_corpus/" + output_file, "w") as f:
         f.write(macro_conllu_string)

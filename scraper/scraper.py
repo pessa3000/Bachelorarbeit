@@ -11,11 +11,13 @@ import json
 import html
 from time import strftime, localtime,  gmtime
 import time
-
+import re
 from sympy.codegen.ast import Raise
 
 from spacy_conllu import clean_text as clean_text_conllu
 import emoji
+
+
 
 
 
@@ -96,73 +98,14 @@ def links_getter(base_URL, category_URL):
         
         #print('end')
         return data_links
+    else:
+        return None
 
 
-# ehem. clean_html
-# makes the tv3 text ready for conllu :)))))
-def tv3_text_cleaner(html_text):
-    #html_text = html_text.replace(".&amp;nbsp;", ".\n")
-    if not html_text:
-        return
-    #the text will be html.unescaped at the end again
-    html_text= html.unescape(html.unescape(html_text))
-    html_text = html_text.replace("&nbsp;", " ")
-    html_text = html_text.replace("\u00a0", " ")
-    #for i in range(6):
-    #    html_text= html_text.replace("\n\n", "\n")
-    html_text_stripped= html_text.split("\n")
-    for number, line in enumerate(html_text_stripped):
-        #print("1LIN", line)
-        if not line:
-            #print("removing empty line")
-            html_text_stripped.pop(number)
-    for number, line in enumerate(html_text_stripped):
-        #print("2LIN", line)
-        if "!function()" in line:
-            html_text_stripped.pop(number)
-            #print("Removing", number, line, html_text_stripped[number])
-    for number, line in enumerate(html_text_stripped):
-        #print("3LIN", line)
-        if line:
-            #this condition removes titles or floating text that are not full sentences, as they are not ended by "." but "\n"
-            # same to remove floating quotations that are not appropiately removed from the clean text
-            if line[-1].isalpha() or line[-1] in ['"', "“", "”", ":"]:
-                #print("Removing bc of last character", line, html_text_stripped[number])
-                html_text_stripped.pop(number)
-    for number, line in enumerate(html_text_stripped):
-        #print("peus", line)
-        if line:
-            if line[-1] == ")":
-                #print("peu de foto pillat", line, html_text_stripped[number])
-                html_text_stripped.pop(number)
-    forbidden=["twitter.", "&#", "@", "&&", "¿", "¡", "Notícia relacionada:"]
-    for chars in forbidden:
-        for number, line in enumerate(html_text_stripped):
-            if chars in line:
-                print("\tRemoving line bc of ", chars, line)
-                html_text_stripped.pop(number)
-    # eliminate sentences with emojis in case some survived
-    for number, line in enumerate(html_text_stripped):
-        if emoji.emoji_count(line)>0:
-            print("\temoji found :)",emoji.emoji_list(line))
-            html_text_stripped.pop(number)
 
-    new_string= ""
-    for item in html_text_stripped:
-        item = item.strip()
-        new_string = new_string + " " + item
-    new_string= new_string.replace(".\n", ". ")
-    new_string= new_string.replace(":\n", ": ")
-    for i in range(10):
-        sense_peu=peus_de_foto(new_string)
-        if new_string==sense_peu:
-            #print("peu estable de merda")
-            break
-        else:
-            #print("peu funciona", i)
-            new_string=sense_peu
 
-    return new_string
+
+
 
 def tv3_text_cleaner_v2(html_text):
     #html_text = html_text.replace(".&amp;nbsp;", ".\n")
@@ -180,14 +123,13 @@ def tv3_text_cleaner_v2(html_text):
     for line in html_text_stripped:
         j+=1
         #print(j, line)
-
         # remove empty lines
         if not line:
             continue
         if len(line) < 2 or line.isspace():
             continue
         # superbad strings -> if string in paragraph, paragraph gets removed
-        bad_strings = ["!function()", "twitter.", "&#", "@", "&&", "¿", "¡", "#", "Notícia relacionada:"]
+        bad_strings = ["!function()", "twitter.", "&#", "@", "&&", "¿", "¡", "#"]
         flag = 0
         for s in bad_strings:
             if s in line:
@@ -255,31 +197,6 @@ def tv3_text_cleaner_v2(html_text):
     return cleanest
 
 
-
-def peus_de_foto(string):
-    if not isinstance(string, str):
-        print("peus de foto error, not str")
-        return string
-    if "(" not in string or ")" not in string:
-            #print("alles klar")
-            return string
-    else:
-        new_string= ""
-        obrim= string.index("(")
-        tanquem = string.index(")")
-        #print("parentesis", string[obrim:tanquem+1])
-        if "/" in string[obrim:tanquem]:
-            print(string[obrim:tanquem])
-            if "." in string[:obrim]:
-                pt1 = string[:string[:obrim].rindex(".")+1]
-                pt2 = string[tanquem+1:]
-                return pt1+pt2
-            else:
-                return string[tanquem+1:]
-        else:
-            pt1= string[:obrim]
-            pt2= string[tanquem+1:]
-            return pt1+pt2
             
 #returns list of news w infos etc
 def tv3_pipeline(tema, desired_articles, pages_to_check, last_page=100):
@@ -316,11 +233,13 @@ def tv3_pipeline(tema, desired_articles, pages_to_check, last_page=100):
     print(data_links)
     # execute the scraping function for each link
     for i, article_url in enumerate(data_links):
+
         scraped_article = article_scraper(article_url)
         if scraped_article:
             print(f"adding new nr. {i}: {scraped_article['title']}")
-            if scraped_article["published_date"] > "2020-06-11":
-                print("Date of ChatGPT3-publishment erreicht at article", i , scraped_article["published_date"])
+            #print(scraped_article.keys())
+            if scraped_article["published_date"] > "2022-11-29":
+                print("Date of ChatGPT-3-publishment erreicht at article", i , scraped_article["published_date"])
                 break
             #skip article if its cleant version is too short
             # it is necessary to do here two step cleaning?
@@ -334,7 +253,7 @@ def tv3_pipeline(tema, desired_articles, pages_to_check, last_page=100):
             else:
                 print(f"cleaning article {i} made it empty")
                 continue
-
+            scraped_article["url"] = article_url
             data_list.append(scraped_article)
             if len(data_list) >= desired_articles:
                 print(f"nr of articles about {tema} reached", desired_articles)
@@ -349,7 +268,8 @@ def tv3_pipeline(tema, desired_articles, pages_to_check, last_page=100):
     l= len(data_list)
     for number, data_set in enumerate(data_list):
         data_set["batch_id"]= f"{date}_{tema}_{l}"
-        data_set["custom_id"]= data_set["batch_id"]+"_"+f"{str(number).zfill(3)}"
+        data_set["custom_id"]= data_set["batch_id"]+"_tv3_"+f"{str(number).zfill(3)}"
+        data_set["volltext"] = html.unescape(html.unescape(data_set["text"]))
         # 2-step cleaning
         data_set["QC_volltext"]=clean_text_conllu(tv3_text_cleaner_v2(data_set["text"]))
 
@@ -377,7 +297,7 @@ def tv3_scraper(codi, llista_temes, desired_articles, pages_to_check):
     # ask for the tv3 data, print the tv3 data
     print("Starting at ", start_date)
     for tema, l_page in llista_temes.items():
-        scraped_data = tv3_pipeline(tema, desired_articles, pages_to_check)
+        scraped_data = tv3_pipeline(tema, desired_articles, pages_to_check, last_page = l_page)
         corpusfile = f"{codi}tv3_corpus_{len(scraped_data)}_{tema}.json"
         corpuspath = "data/" + corpusfile
         # corpus_list.append(corpusfile)
