@@ -1,4 +1,6 @@
 import html
+
+
 import emoji
 import re
 from fast_langdetect import detect
@@ -8,13 +10,16 @@ from fast_langdetect import detect
 def gen_r2c(text):
     # html_text = html_text.replace(".&amp;nbsp;", ".\n")
     if not text:
+        print("\tgen_r2c: no text")
         return
+
     # the text will be html.unescaped at the end again
     text = html.unescape(html.unescape(text))
     # removing tabs
     list_of_problematic_characters = ["\r", "\t"]
     for c in list_of_problematic_characters:
         text = text.replace(c, "")
+    text = text.replace("\xa0", " ")
     # not necessary:
     # html_text = html_text.replace("&nbsp;", " ")
     # html_text = html_text.replace("\u00a0", " ")
@@ -30,6 +35,9 @@ def gen_r2c(text):
             continue
         if len(par) < 2 or par.isspace():
             continue
+        # AI texts use this to separate the "news text" from their reflections, answers, etc
+        if "---" in par:
+            break
         # if string in paragraph, paragraph gets removed
         # anything suspicious of being a tweet
         bad_strings = ["function", ".twitter", "&#", "@", "&", "¿", "¡", "#", "(···)", "(...)"]
@@ -45,27 +53,25 @@ def gen_r2c(text):
         bad_characters = ['"', "“", "”", ")"]
         flag = 0
         for character in bad_characters:
-            for i in range(4):
-                if len(par) < i:
-                    break
-                if par.strip()[-i] == character:
-                    # print(line, "removed")
-                    flag = 1
-                    break
+            if par.strip()[-1] == character:
+                #print(f"\tgen_r2c: char {character} in paragraph end", par, "removed")
+                flag = 1
+                break
         if flag == 1:
             continue
-        # removing titles
+        # removing titles and unfinished AI sentences
         if par.strip()[-1].isalnum():
+            # print("\tgen_r2c: removing title", par)
             continue
 
         # remove emojis
         if emoji.emoji_count(par) > 0:
-            # print("\t emoji found :)", emoji.emoji_list(line))
+            # print("\t gen_r2c emoji found :)", emoji.emoji_list(par))
             continue
         # remove urls
         url_pattern = re.compile(r'https?://\S+|www\.\S+')
         if url_pattern.search(par):
-            #print("found url")
+            # print("\tgen_r2c: found url")
             continue
 
         # filtering other languages
@@ -101,25 +107,43 @@ def gen_r2c(text):
 
 # KI specific cleaning
 def KI_r2c(text):
+    print("ENTERING KI_r2c")
     if not text:
         return text
 
-    # critical signs of "AI talking to itself"
-    if "Gràcies!" in text:
-        return ""
+    if text.strip()[-1] != ".":
+        print("\tKI_r2c: deleting last unfinished sentence", text.split(".")[-1])
+        if ". " in text:
+            text = text[:text.rindex(". ")] + ". "
+        else:
+            return
+
     clean_text1 = ""
     for par in text.split("\n"):
         if not par:
             continue
+        #print("par", par)
         #removing KI enumerations, also titles
-        if par.strip()[0] == "*":
-            # print("3skipped '", paragraph, "'")
-            continue
+
+        # critical signs of "AI talking to itself" -> stop adding text
+        self_talk_words= ["De res.", "Sí, és cert.", "eniu raó", "ens raó","Perfecte!", "e res!", "Estic d'acord", "Sóc d'acord", "És cert", "Totalment cert",   "Molt ben dit", "Ho faré", "Exacte.", "Certament.", "Gràcies", "Absolutament.", "Perfecte.", "necessitaràs ampliar", " Moltes gràcies", "Moltíssimes gràcies", "otalment d'acord."]
+        talking_to_user = ["spero que", " podeu ", "Si voleu ", " pots ", "Si vols", "Aquí teniu", "Si necessites", " dubtis"]
+        critical_words = self_talk_words + talking_to_user
+
+        flag=0
+        for word in critical_words:
+            if word in par:
+                print(word, "in paragraph", par)
+                flag=1
+                break
+        if flag == 1:
+            break
 
         if not clean_text1:
             clean_text1 = par
             continue
         else:
+            #print("adding", par)
             clean_text1 = clean_text1 + "\n" + par
 
     # delete text between the even "**" positions, as they are problematic
@@ -131,20 +155,27 @@ def KI_r2c(text):
         for i, piece in enumerate(pieces):
             if i % 2 == 0:
                 cleaned_text = cleaned_text + piece
-
+    print("\tKI_r2c survived from the ** cleaning: ",cleaned_text)
+    cleaned_text = cleaned_text.replace("\n", " ")
+    while "  " in cleaned_text:
+        cleaned_text = cleaned_text.replace("  ", " ")
     # removing AI problematic characters, text
-    problematic_chars = [ "[", "]", "/", "*", "?", "EFE", "ACN", "El Punt Avui", "Vilaweb", "preguntes:"]
+    problematic_chars = [ "[", "]", "/", "*"]
+    clean_text1= ""
+
     for sentence in cleaned_text.split(". "):
+
         if bool("(" in sentence) ^ bool(")" in sentence):
-            print("uncomplete parenthesis found: ", sentence)
+            print("\t KI_r2c uncomplete parenthesis found: ", sentence)
             continue
         flag = 0
         for char in problematic_chars:
             if sentence.find(char) != -1:
+                print("\t KI_r2c found '", char, "' in", sentence)
                 flag = 1
                 break
         if flag == 1:
-            print(f"\t {char} found in sentence: {sentence}, skipping")
+            print(f"\t KI_r2c {char} found in sentence: {sentence}, skipping")
             continue
         # check if there s an alphabetic char in the sentence
         flag = 1
@@ -153,107 +184,27 @@ def KI_r2c(text):
                 flag = 0
                 break
         if flag == 1:
-            print(f"\t Deleting non-text sentence: {sentence}")
+            print(f"\t KI_r2c Deleting non-text sentence: {sentence}")
             continue
+        if not clean_text1:
+            clean_text1 = sentence + ". "
+            continue
+        else:
+            clean_text1 = clean_text1 + ". " + sentence
 
-    # check if there s a colon. delete everything after the last colon
-    if cleaned_text.find(".") == -1:
-        print("err, no colon in the whole KI text")
-        return ""
-    else:
-        cleaned_text = cleaned_text[:cleaned_text.rindex(".")] + "."
-    return cleaned_text
 
-def KI_text_cleaner(text):
-    text = html.unescape(html.unescape(text))
-    if not isinstance(text, str):
-        print("error, KI answer is not a string")
-        return ""
-    else:
-        cleaned_text1 = ""
-        # elimina titols
-        for i, paragraph in enumerate(text.split("\n")):
-            #print(i, paragraph)
-            if not paragraph:
-                #print("1 skipped '", paragraph, "'")
-                continue
-            if len(paragraph.strip()) < 2:
-                #print("1.5 skipped '", paragraph, "'")
-                continue
-            if paragraph.strip()[-1].isalnum() or paragraph.strip()[-1] == ":":
-                #print("2skipped '", paragraph, "'")
-                continue
+    while ". ." in clean_text1 or "  " in clean_text1:
+        clean_text1 = clean_text1.replace(". . ", ". ")
+        clean_text1 = clean_text1.replace("  ", " ")
+    return clean_text1
 
-            if paragraph.strip()[1] == "*":
-                #print("3skipped '", paragraph, "'")
-                continue
-            # else add the paragraph
-            # PARAGRAPHS ARE PRESERVED
-            if not cleaned_text1:
-                cleaned_text1 = paragraph
-            else:
-                cleaned_text1 = cleaned_text1 + "\n" + paragraph
-                #print(i, paragraph)
-        cleaned_text = cleaned_text1
-        #remove urls
-        text= cleaned_text1
-        #delete text between the even "**" positions, as they are subtitles
-        pieces=text.split("**")
-        if len(pieces)==1:
-            cleaned_text=pieces[0]
-        elif len(pieces) > 1:
-            for i, piece in enumerate(pieces):
-                if i%2==0:
-                    cleaned_text=cleaned_text+piece
-            try:
-                cleaned_text.rindex(".")
-            except:
-                print("problem, no colon after the laast star")
-                return ""
-        try:
-            cleaned_text.rindex(".")
-        except:
-            print("err, no colon in the whole KI text")
-            return ""
-        #Elimina el q hi ha darrere de l ultim "."
-        cleaned_text= cleaned_text[:cleaned_text.rindex(".")]+"."
-
-        cleaned_text2=""
-        # Elimina possibles enumeracions
-        # filter all problematic combinations of characters that identify KI bad sentences
-        problematic_chars = [":", "!", "]", "/", "*", "?","EFE", "ACN","El Punt Avui", "Vilaweb",  "preguntes:"]
-        for sentence in cleaned_text.split(". "):
-            if bool("(" in sentence) ^ bool(")" in sentence):
-                print("uncomplete parenthesis found: ", sentence)
-                continue
-            flag=0
-            for char in problematic_chars:
-                if sentence.find(char) != -1:
-                    flag=1
-                    break
-            if flag == 1:
-                print(f"\t {char} found in sentence: {sentence}, skipping")
-                continue
-
-            # check if there at least one alphanumeric character in the sentence
-            flag=1
-            for character in sentence:
-                if character.isalpha():
-                    flag=0
-                    break
-            if flag==1:
-                print(f"\t Deleting non-text sentence: {sentence}")
-                continue
-            else:
-                cleaned_text2=cleaned_text2+sentence+". "
-
-        #cleaned_text2= clean_text_conllu(cleaned_text2)
-        return cleaned_text2
 
 
 def tv3_r2c(text):
     # tv3 specific stuff to remove
     # enumerations
+    if not text:
+        return text
     clean_pars=""
     for par in text.split("\n"):
         # remove enumerations
@@ -278,15 +229,13 @@ def tv3_r2c(text):
 
 def corpus_to_data(text):
     # paragraph cleaning
+    # not needed since there are no paragraphs on arrival
+    if not text:
+        return text
     data_pars = ""
     for par in text.split("\n"):
-        # remove enumerations
-        # tv3 style:
-        if par[0] in ["-"]:
-            # print("remove", line)
+        if not par:
             continue
-        # KI style:
-
         if not data_pars:
             data_pars = par
             continue
@@ -296,26 +245,46 @@ def corpus_to_data(text):
 
     # eliminating paragraphs
     data_text= data_pars.replace("\n", " ")
+
+
+
     data_clean=""
 
-    for i in range(10):
-        data_text=data_text.replace("  ", " ")
-
     for sent in data_text.split(". "):
-    # removing sentences w questions, exclamation marks, and : bc spacy can't handle them
+        # removing sentences w questions, exclamation marks, and : bc spacy can't handle them
+        for char in ["!"]:
+            if sent.find(char) != -1:
+                sent = sent[sent.rindex(char)+1:].strip()
         flag=0
-        for char in [":", "!", "?"]:
-            if char in sent:
+        for char in [":", "?"]:
+            if sent.find(char) != -1:
                 flag=1
+                break
         if flag==1:
             continue
 
-
+        flag=1
+        for char in sent:
+            if char.isalpha():
+                flag=0
+                break
+        if flag == 1:
+            continue
 
         # adding sentences
         if not data_clean:
-            data_clean = sent
+            data_clean = sent + ". "
         else:
             data_clean = data_clean + ". " + sent
+
+    while "  " in data_clean or ". ." in data_clean:
+        data_clean = data_clean.replace("  ", " ")
+        data_clean = data_clean.replace(". .", ". ")
+    if data_clean:
+        #assegurar q l ultima frase acaba en punt
+        if data_clean.strip()[-1] != ".":
+            if len(data_clean) > 4:
+                if "." not in data_clean[-3:]:
+                    data_clean = data_clean + "."
 
     return data_clean

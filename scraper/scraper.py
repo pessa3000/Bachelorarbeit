@@ -16,7 +16,7 @@ from sympy.codegen.ast import Raise
 
 from spacy_conllu import clean_text as clean_text_conllu
 import emoji
-
+from cleaning_tools import tv3_r2c, gen_r2c, corpus_to_data
 
 
 
@@ -243,15 +243,16 @@ def tv3_pipeline(tema, desired_articles, pages_to_check, last_page=100):
                 break
             #skip article if its cleant version is too short
             # it is necessary to do here two step cleaning?
-            cleaned_article= clean_text_conllu(tv3_text_cleaner_v2(scraped_article["text"]))
+            # cleaned_article= clean_text_conllu(tv3_text_cleaner_v2(scraped_article["text"]))
+            cleaned_article = tv3_r2c(gen_r2c(scraped_article["text"]))
             if cleaned_article:
                 if len(cleaned_article.split(".")) <= 5:
-                    print(f"err QC text {i} is too short, will be skipped")
+                    print(f"err corpus text {i} is too short, will be skipped")
                     continue
             if scraped_article['title'].endswith(" - 3CatInfo"):
                 scraped_article['title'] = scraped_article['title'][:-len(" - 3CatInfo")]
             else:
-                print(f"cleaning article {i} made it empty")
+                print(f"cleaning article {i} for the corpus made it empty")
                 continue
             scraped_article["url"] = article_url
             data_list.append(scraped_article)
@@ -269,9 +270,9 @@ def tv3_pipeline(tema, desired_articles, pages_to_check, last_page=100):
     for number, data_set in enumerate(data_list):
         data_set["batch_id"]= f"{date}_{tema}_{l}"
         data_set["custom_id"]= data_set["batch_id"]+"_tv3_"+f"{str(number).zfill(3)}"
-        data_set["volltext"] = html.unescape(html.unescape(data_set["text"]))
+        data_set["corpus"] = tv3_r2c(gen_r2c(data_set["text"]))
         # 2-step cleaning
-        data_set["QC_volltext"]=clean_text_conllu(tv3_text_cleaner_v2(data_set["text"]))
+        data_set["QC_volltext"]=corpus_to_data(data_set["corpus"])
 
         data_set["QC_text"]=  ".".join(data_set["QC_volltext"].split(".")[3:])
     # purge out news whose clean version is under 100 words

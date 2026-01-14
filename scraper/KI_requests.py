@@ -7,6 +7,7 @@ import glob
 from batch_creator import tv3_to_batch
 import os.path
 import html
+from cleaning_tools import KI_r2c, gen_r2c, corpus_to_data
 
 # API configuration
 api_key = '89d3827b18a05873a7112804bc3fa1fb' # SAIA API key, gültig bis märz 25
@@ -105,6 +106,7 @@ def reestructure_chat_completions(chat_completions):
         completion.update(dict(completion["usage"]))
         completion.pop("usage")
         completion["QC_text"]= ""
+        completion["corpus"]= ""
     return chat_completions_clean
 
 #remove annoying headers and titles, also ensure that there is no incomplete sentence at the end
@@ -276,11 +278,11 @@ def KI_corpus_generator(codi, llista_temes, model):
         chat_completions_clean = reestructure_chat_completions(llm_answers)
         # cleaning the answers
         for i, completion in enumerate(chat_completions_clean):
-            # cleaning step specific to AI
-            mid_clean_text = KI_text_cleaner(completion["text"])
-            
-            # general cleaning step, common with scraped news
-            completion["QC_text"] = clean_text_conllu(mid_clean_text)
+            # cleaning step to make the corpus out of the raw data
+            completion["corpus"]= KI_r2c(gen_r2c(completion["text"]))
+
+            # extracing data from the corpus
+            completion["QC_text"] = corpus_to_data(completion["corpus"])
             if not completion["QC_text"]:
                 print("cleaning KI text made it empty")
                 continue

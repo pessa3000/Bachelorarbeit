@@ -12,6 +12,7 @@ from conllu import parse
 import spacy
 import re
 from fast_langdetect import detect
+import os.path
 
 
 # function to remove URLS :)
@@ -46,16 +47,21 @@ def repeated_sentences_finder_text(text):
     l_repeated = []
     c = 0
     repetitions = {}
-    for i, item in enumerate(l):
-        # print(item)
-        if l[i] == l[i - 1] and l[i] != l[i - 2]:
-            # print(l[i], "\n", l[i-1])
-            l_repeated.append(l[i])
-            l_repeated.append(l[i - 1])
-            c = c + 2
-        elif l[i] == l[i - 1] and l[i] == l[i - 2]:
-            l_repeated.append(l[i])
-            c= c+1
+    if len(l) >= 2:
+        for i, item in enumerate(l):
+            # print(item)
+            if l[i] == l[i - 1] and l[i] != l[i - 2]:
+                # print(l[i], "\n", l[i-1])
+                l_repeated.append(l[i])
+                l_repeated.append(l[i - 1])
+                c = c + 2
+            elif l[i] == l[i - 1] and l[i] == l[i - 2]:
+                l_repeated.append(l[i])
+                c= c+1
+    elif len(l) ==2:
+        if l[0] == l[1]:
+            l_repeated.append(l[0])
+            l_repeated.append(l[1])
 
     #print(f"\t\tTotal sents{len(l)}, repeated {c}, {100 * c / len(l)} %")
     return l_repeated
@@ -275,11 +281,15 @@ def spacy_analysis_corpus(codi, llista_temes, model):
 
     for infile in corpus_list:
         outfile = infile.replace(".json", ".conllu")
-        try:
+        infolder="data"
+
+        if os.path.isfile(os.path.join(infolder, infile)):
             spacy_pipeline(infile, outfile)
             done.append(outfile)
             print("Spacy analysis printed to", outfile)
             print("\t files analysed so far:", done)
-        except Exception as e:
-            print("ERROR", e)
+        else:
+            print(f"ERROR: {infile} not found")
+            continue
+
 
