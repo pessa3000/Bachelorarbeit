@@ -1,4 +1,4 @@
-from conllu_test import file_to_conllu, check_conds, check_conllu_for_conditions_v3, check_conllu_for_conditions2
+from conllu_test import file_to_conllu, check_conds, check_conllu_for_conditions_v3, check_conllu_for_conditions2, check_conllu_for_conditions_v4
 import time
 import pandas as pd
 from pathlib import Path
@@ -22,6 +22,15 @@ def eval_conds(d_conds, file, max_ex=100, custom_id= False):
     print(f"done with list, it took {time.time()-t0}")
     return list
 
+#returns a list of dictionaries for each condition,
+def eval_conds_extra_files(cond, file, name, max_ex=500, custom_id= False):
+    # achtung check_conllu_for_conditions_v4 already returns a list of dicts
+    results = check_conllu_for_conditions_v4(file, cond, max_l=max_ex)
+    total_nr = check_conllu_for_conditions2(file, cond, printf=False)
+    for d in results:
+        d["matches"] = str(total_nr)
+        d["cond_name"] = name
+    return results
 
 # FUNCITON 2: input: list of result dictionaries + name of the file the results should be printed in
 # checks that the keys are the ones htat shoud be too
@@ -47,28 +56,47 @@ def print_eval_log(jlist, outfile, return_res=True):
 # list of condition lists comes in,
 # file list comes in
 # evaluates conditions on ht efiles and prints the result in  outfile.tsv, can be opened with libre office
-def eval_pipeline(list_of_eval_sets, file_list, outfile):
+def eval_pipeline(list_of_eval_sets, file_list, outfile, basic_run=True, extra_eval_files= True):
     t0=time.time()
+    thyme = str(datetime.datetime.now())[:-7]
+
     res_col=[]
     conds_count=0
-    for file in file_list:
+    if basic_run:
+        for file in file_list:
+            for num, eval_series in enumerate(list_of_eval_sets):
+                print(f"Evaluating list {num+1} of {len(list_of_eval_sets)} on {file}")
+                res_l=eval_conds(eval_series, file, max_ex=100, custom_id=True)
+                for result in res_l:
+                    #adding a eval series number to the results from the same list of conditions (like nsubj list)
+                    result.update({"cond_nr": conds_count})
+                    result.update({"eval_series": num})
+                    res_col.append(result)
+                    conds_count+=1
+        evals = json.dumps(print_eval_log(res_col, outfile, return_res=True))
+        print("***SUCCESSFUL RUN***")
+        print(f" {conds_count} evaluations done in {time.time() - t0} s, av. time {(time.time() - t0) / conds_count} s")
+        please = json.loads(evals)
+        with open("eval/" + outfile, "w") as f:
+            df = pd.DataFrame(please)
+            df.to_csv(f, sep="\t", index=False)
+
+    if extra_eval_files:
+        print("going for extra printing files to each condition")
         for num, eval_series in enumerate(list_of_eval_sets):
-            print(f"Evaluating list {num+1} of {len(list_of_eval_sets)} on {file}")
-            res_l=eval_conds(eval_series, file, max_ex=100, custom_id=True)
-            for result in res_l:
-                #adding a eval series number to the results from the same list of conditions (like nsubj list)
-                result.update({"cond_nr": conds_count})
-                result.update({"eval_series": num})
-                res_col.append(result)
-                conds_count+=1
-    #print("this is the loop output:", res_col)
-    evals=    json.dumps(print_eval_log(res_col, outfile, return_res=True))
-    print("***SUCCESSFUL RUN***")
-    print(f" {conds_count} evaluations done in {time.time()-t0} s, av. time {(time.time()-t0)/conds_count} s")
-    please=json.loads(evals)
-    with open("eval/"+outfile, "w") as f:
-        df=pd.DataFrame(please)
-        df.to_csv(f, sep="\t", index=False)
+            for name, cond in eval_series.items():
+                sentences_res= []
+                for file in file_list:
+                    print(f"Evaluating cond {name} on {file}")
+                    sentences_res.extend(eval_conds_extra_files(cond, file, name, max_ex=200, custom_id=True))
+
+                foldername= file_list[0][0:3] +"_"+ thyme
+                filename= file_list[0][0:3]+"_"+name+".csv"
+                Path(f"eval_sents/{foldername}").mkdir(parents=True, exist_ok=True)
+                with open(f"eval_sents/{foldername}/{filename}", "w") as f:
+                    print("printing to ", filename)
+                    df = pd.DataFrame(sentences_res)
+                    df.to_csv(f, sep="\t", index=False)
 
     return 0
 
@@ -113,6 +141,14 @@ def conllu_file_stats(file):
     if not conllu_file:
         print("error file empty, or file not conllu")
         return {}
+    #
+    # print(conllu_file[0].metadata.keys())
+    # for key in conllu_file[0].metadata.keys():
+    #     print(key, conllu_file[0].metadata[key])
+    # print(conllu_file[0][0].keys())
+    # for key in conllu_file[0][0].keys():
+    #     print(key, conllu_file[0][0][key])
+
     for sent in conllu_file:
         words=words+len(sent)
     d["words"]=words

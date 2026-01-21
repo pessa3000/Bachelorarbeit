@@ -2,7 +2,7 @@ from openai import OpenAI
 import time
 import copy
 import json
-from spacy_conllu import clean_text as clean_text_conllu, remove_urls
+from spacy_conllu import remove_urls
 import glob
 from batch_creator import tv3_to_batch
 import os.path

@@ -2,6 +2,9 @@
 from conllu import parse
 import os
 from functools import wraps
+import glob
+import json
+import datetime
 #with open("prova_conll.conllu", "r") as f:
 #    sentences = f.read()
 #    conllu_parse = parse(sentences)
@@ -205,6 +208,17 @@ def merge_evals(condict1, condict2):
 
     return mega_dict
 
+def merge_list_evals(cond_list):
+    if type(cond_list) is not list:
+        print("error, merge_list_evals requires a list!")
+        return 0
+    else:
+        a= cond_list[0]
+        for item in cond_list:
+            a = merge_evals(a, item)
+        return a
+
+
 # same workings as has_no_sons
 def has_no_sons(sent, token, index, l_conds):
     for i, condy in enumerate(l_conds):
@@ -234,11 +248,10 @@ def has_no_son(sent, token, index, conds):
                 pass
     return True
 
-
-#ex. {"head" : prev}
+# checks: head is the word right after / before the token
+#ex. {"head": next_head}
 #example: rel-condition prev requires the key of the condition to be the same as the previous one
 #k is the key of the cond
-
 def prev_head(sent, token, index, k):
     if index == 1:
         return False
@@ -260,6 +273,7 @@ def next_head(sent, token, index, k):
         #print(token.get(k), index+1, type(token.get(k)), type(index+1))
         return False
 
+# checks if the head comes before or after a word
 def head_smaller_than_id(sent, token, index, k):
     if token.get(k) <= index+1:
         #print(token.get(k), ">=", index+1)
@@ -269,7 +283,6 @@ def head_smaller_than_id(sent, token, index, k):
         return True
     else:
         return False
-
 
 def head_greater_than_id(sent, token, index, k):
     if token.get(k) >= index+1:
@@ -502,6 +515,34 @@ def check_conllu_for_conditions_v3(filename, conditions, max_l=100, printf=False
     #return count
 
 
+# for a condition returns a list of dictionaries of all the sentences, incl content, that fulfill it in the file
+def check_conllu_for_conditions_v4(filename, conditions, max_l=100, printf=False, custom_id=True):
+    conllu_parse= file_to_conllu(filename)
+    llista =[]
+    count=0 #counts how many times the conditions are fulfilled in the whole corpus
+    if not isinstance(conditions, list):
+        for conds in conditions:
+            if not isinstance(conds, dict):
+                raise TypeError(f"conditions must be a list of dicts, got {conds} instead, which is {type(conds)}")
+    #print(f'dict of conds has {l} conditions')
+    for num, sent in enumerate(conllu_parse):
+        if len(llista) > max_l:
+            print("max n of examples erreicht")
+            break
+        times=check_sent_for_conditions(sent, conditions, printf)
+        if times:
+            d= {"times": times, "sent_text": sent.metadata["text"], "filename": filename, "eval_date": datetime.datetime.now()}
+            if custom_id:
+                d["custom_sent_id"] = sent.metadata["custom_sent_id"]
+            else:
+                d["sent_id"] = sent.metadata["sent_id"]
+            llista.append(d)
+    print(f"found {len(llista)} sentences")
+    return llista
+
+
+
+
 #just counts how many times a condition is met in the corpus
 def check_conllu_for_conditions2(filename, conditions, printf=False):
     conllu_parse= file_to_conllu(filename)
@@ -674,3 +715,62 @@ def conllu_merger(file_list, output_file, repeated_articles= False):
     with open("analysed_corpus/" + output_file, "w") as f:
         f.write(macro_conllu_string)
 
+# enter list of topics + codi + tipus
+# list of files with that topic (1 per topic, the biggerst one) and codi are returned
+def conllu_files_list(llista_temes, codi, tipus):
+    llista_arxius=[]
+    for tema in llista_temes:
+        print("adding", tema)
+        if not glob.glob(f"analysed_corpus/{codi}{tipus}_corpus_*_{tema}*.conllu"):
+            #raise Exception(f"File for topic {codi}{tipus}_corpus_*_{tema}*.conllu not found.")
+            print(f"!!!! {codi}{tipus}_corpus_*_{tema}*.conllu not found")
+        elif len(glob.glob(f"analysed_corpus/{codi}{tipus}_corpus_*_{tema}*.conllu")) > 0:
+            topic_files=glob.glob(f"analysed_corpus/{codi}{tipus}_corpus_*_{tema}*.conllu")
+            topic_files.sort(reverse=True)
+            corpuspath = topic_files[0]
+            corpusfile = corpuspath.split("/")[-1]
+            llista_arxius.append(corpusfile)
+    return llista_arxius
+
+
+
+def corpus_merger(llista_arxius, output_file, repeated_articles= False):
+    baby_json= []
+    url_list= []
+    for infile in llista_arxius:
+        list_of_dicts= []
+        with open("data/"+infile, "r") as in_file:
+            data = json.load(in_file)
+        #print(data[0].keys())
+        interesting_keys= ["url", "custom_id", "batch_id", "corpus", "file"]
+        for item in data:
+            item["file"]=infile
+            if item["url"] in url_list:
+                continue
+            else:
+                url_list.append(item["url"])
+                list_of_dicts.append({k: item[k] for k in interesting_keys})
+        print(infile, len(data), "unique:",len(list_of_dicts))
+        baby_json.extend(list_of_dicts)
+        url_list.extend([item["url"] for item in list_of_dicts])
+
+    with open("corpus/"+output_file, "w") as outfile:
+        json.dump(baby_json, outfile, ensure_ascii=False)
+
+
+# enter list of topics + codi + tipus
+# list of json files with that topic (1 per topic, the biggerst one) and codi are returned
+def corpus_files_list(llista_temes, codi, tipus):
+    llista_arxius = []
+    for tema in llista_temes:
+        print("adding corpus file", tema)
+        if not glob.glob(f"data/{codi}{tipus}_corpus_*_{tema}*.json"):
+            # raise Exception(f"File for topic {codi}{tipus}_corpus_*_{tema}*.conllu not found.")
+            print(f"!!!! {codi}{tipus}_corpus_*_{tema}*.json not found")
+        elif len(glob.glob(f"data/{codi}{tipus}_corpus_*_{tema}*.json")) > 0:
+            topic_files = glob.glob(f"data/{codi}{tipus}_corpus_*_{tema}*.json")
+            topic_files.sort(reverse=True)
+            corpuspath = topic_files[0]
+            corpusfile = corpuspath.split("/")[-1]
+            llista_arxius.append(corpusfile)
+    return llista_arxius

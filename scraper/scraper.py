@@ -11,10 +11,7 @@ import json
 import html
 from time import strftime, localtime,  gmtime
 import time
-import re
-from sympy.codegen.ast import Raise
 
-from spacy_conllu import clean_text as clean_text_conllu
 import emoji
 from cleaning_tools import tv3_r2c, gen_r2c, corpus_to_data
 
