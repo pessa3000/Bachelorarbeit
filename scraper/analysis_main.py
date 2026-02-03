@@ -4,7 +4,7 @@ import pandas as pd
 from pathlib import Path
 import json
 import datetime
-
+from tqdm import tqdm
 # FUNCTION 1 :input dict of conditions
 # max ex refers to the maximum of examples it will include in the summary
 #output: list of condition dictionaries, ready to json load
@@ -26,9 +26,9 @@ def eval_conds(d_conds, file, max_ex=100, custom_id= False):
 def eval_conds_extra_files(cond, file, name, max_ex=500, custom_id= False):
     # achtung check_conllu_for_conditions_v4 already returns a list of dicts
     results = check_conllu_for_conditions_v4(file, cond, max_l=max_ex)
-    total_nr = check_conllu_for_conditions2(file, cond, printf=False)
+    #total_nr = check_conllu_for_conditions2(file, cond, printf=False)
     for d in results:
-        d["matches"] = str(total_nr)
+        #d["matches"] = results["matches"]
         d["cond_name"] = name
     return results
 
@@ -60,6 +60,7 @@ def eval_pipeline(list_of_eval_sets, file_list, outfile, basic_run=True, extra_e
     t0=time.time()
     thyme = str(datetime.datetime.now())[:-7]
 
+
     res_col=[]
     conds_count=0
     if basic_run:
@@ -77,24 +78,27 @@ def eval_pipeline(list_of_eval_sets, file_list, outfile, basic_run=True, extra_e
         print("***SUCCESSFUL RUN***")
         print(f" {conds_count} evaluations done in {time.time() - t0} s, av. time {(time.time() - t0) / conds_count} s")
         please = json.loads(evals)
-        with open("eval/" + outfile, "w") as f:
+        foldername = outfile[:3]
+        Path(f"eval/{foldername}").mkdir(parents=True, exist_ok=True)
+        with open(f"eval/{foldername}/" + outfile, "w") as f:
             df = pd.DataFrame(please)
             df.to_csv(f, sep="\t", index=False)
 
     if extra_eval_files:
+        foldername = outfile[:-4]+thyme
         print("going for extra printing files to each condition")
         for num, eval_series in enumerate(list_of_eval_sets):
-            for name, cond in eval_series.items():
+            print(f"******************num {num} of {len(list_of_eval_sets)}")
+            for name, cond in tqdm(eval_series.items(), total=len(eval_series)):
                 sentences_res= []
                 for file in file_list:
                     print(f"Evaluating cond {name} on {file}")
                     sentences_res.extend(eval_conds_extra_files(cond, file, name, max_ex=200, custom_id=True))
 
-                foldername= file_list[0][0:3] +"_"+ thyme
-                filename= file_list[0][0:3]+"_"+name+".csv"
+                filename= outfile[:3]+"_"+name+".csv"
                 Path(f"eval_sents/{foldername}").mkdir(parents=True, exist_ok=True)
                 with open(f"eval_sents/{foldername}/{filename}", "w") as f:
-                    print("printing to ", filename)
+                    print("\tprinting to ", filename)
                     df = pd.DataFrame(sentences_res)
                     df.to_csv(f, sep="\t", index=False)
 

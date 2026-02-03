@@ -110,7 +110,7 @@ def is_not_any_of(sent, token, index, l_conds):
     return True
 
 #to be used like parent is: {has_son: {"deprel": "nsubj"}}
-# it can't receive lists of conditions, it checks one single dict the son muss fullfill ALL CONDITIONS
+# it can't receive lists of conditions, it checks one single dict the son must fullfill ALL CONDITIONS
 # it should not be used in a merge conditions setting
 def has_son(sent, token, index, conds):
     for word in sent:
@@ -302,6 +302,16 @@ def no_weak_pronoun(sent, token, index, k):
         #print(token, token.get('lemma'))
         return True
 
+# wannacry
+def obj_or_iobj(sent, token, index, k):
+    deprel_list= {"iobj", "obj"}
+    if token.get('deprel') in deprel_list:
+        return True
+    else:
+        #print(token, token.get('lemma'))
+        return False
+
+
 # This is necessary to check that the arguments of a verb are NOT subordinate clauses
 # in copulative subordinate clauses the token with the deprel is the head of the predicate
 def is_sub_clause_head_core_arg(sent, token, index, k):
@@ -322,7 +332,7 @@ def is_sub_clause_head(sent, token, index, k):
 # idea: rewrite it as a function of the verb
 def v_SO(sent, token, index, k):
     #definitons
-    conds_obj_good = [{"deprel": "obj", "lemma": no_weak_pronoun, is_not_any_of: [{feats_include: {"PronType": "Rel"}},{"upos": "ADP"}, {"upos":"ADJ"},{"upos":"ADV"}] , has_no_sons: [{"upos": "ADP"}, {"deprel": "case"}, {"deprel": "cop"}, {"deprel": "mark"}]}]
+    conds_obj_good = [{"deprel": obj_or_iobj, "lemma": no_weak_pronoun, is_not_any_of: [{feats_include: {"PronType": "Rel"}},{"upos": "ADP"}, {"upos":"ADJ"},{"upos":"ADV"}] , has_no_sons: [{"upos": "ADP"}, {"deprel": "case"}, {"deprel": "cop"}, {"deprel": "mark"}]}]
     conds_wsubj_true = [{"deprel": "nsubj", "lemma": no_weak_pronoun, is_not: {feats_include: {"PronType": "Rel"}}, has_no_son: {"deprel": "cop"}}]
 
     if token.get("upos") != "VERB":
@@ -366,7 +376,7 @@ def v_SO(sent, token, index, k):
 
 def v_OS(sent, token, index, k):
     #definitons
-    conds_obj_good = [{"deprel": "obj", "lemma": no_weak_pronoun, is_not_any_of: [{feats_include: {"PronType": "Rel"}},{"upos": "ADP"}, {"upos":"ADJ"}, {"upos":"ADV"}] , has_no_sons: [{"upos": "ADP"}, {"deprel": "case"}, {"deprel": "cop"}, {"deprel": "mark"}]}]
+    conds_obj_good = [{"deprel": obj_or_iobj, "lemma": no_weak_pronoun, is_not_any_of: [{feats_include: {"PronType": "Rel"}},{"upos": "ADP"}, {"upos":"ADJ"}, {"upos":"ADV"}] , has_no_sons: [{"upos": "ADP"}, {"deprel": "case"}, {"deprel": "cop"}, {"deprel": "mark"}]}]
     conds_wsubj_true = [{"deprel": "nsubj", "lemma": no_weak_pronoun, is_not: {feats_include: {"PronType": "Rel"}}, has_no_son: {"deprel": "cop"}}]
 
     if token.get("upos") != "VERB":
@@ -505,7 +515,7 @@ def check_conllu_for_conditions_v3(filename, conditions, max_l=100, printf=False
     for num, sent in enumerate(conllu_parse):
         if len(llista) > max_l:
             break
-        times=check_sent_for_conditions(sent, conditions, printf)
+        times=len(check_sent_for_conditions(sent, conditions, printf))
         if times:
             if custom_id:
                 llista.append((times,sent.metadata["custom_sent_id"]))
@@ -529,15 +539,16 @@ def check_conllu_for_conditions_v4(filename, conditions, max_l=100, printf=False
         if len(llista) > max_l:
             print("max n of examples erreicht")
             break
-        times=check_sent_for_conditions(sent, conditions, printf)
+        matches= check_sent_for_conditions(sent, conditions, printf)
+        times=len(matches)
         if times:
-            d= {"times": times, "sent_text": sent.metadata["text"], "filename": filename, "eval_date": datetime.datetime.now()}
+            d= {"times": times, "matches":matches, "sent_text": sent.metadata["text"], "filename": filename, "eval_date": datetime.datetime.now()}
             if custom_id:
                 d["custom_sent_id"] = sent.metadata["custom_sent_id"]
             else:
                 d["sent_id"] = sent.metadata["sent_id"]
             llista.append(d)
-    print(f"found {len(llista)} sentences")
+    print(f"\tfound {len(llista)} sentences")
     return llista
 
 
@@ -556,7 +567,7 @@ def check_conllu_for_conditions2(filename, conditions, printf=False):
                 print(f'{conds} is a {type(conds)}')
     #print(f'dict of conds has {l} conditions')
     for sent in conllu_parse:
-        count= count + check_sent_for_conditions(sent, conditions, printf)
+        count= count + len(check_sent_for_conditions(sent, conditions, printf))
     #return llista
     return count
 
@@ -567,13 +578,15 @@ def check_sent_for_conditions(sent, conditions, printf=False):
     n = len(sent)
     l = len(conditions)
     counter=0
+    token_list=[]
     #remove this condition, it is also tested as part of the for loop:
     #print(f'{l} conditions, {n} len(sent)')
     for j, token in enumerate(sent):
         if printf:
             print(token.get("form"))
         if j >= n-l:
-            return counter
+            return token_list
+            #return counter
         else:
             for i, cond in enumerate(conditions):
                 if printf:
@@ -583,7 +596,7 @@ def check_sent_for_conditions(sent, conditions, printf=False):
                 if check_conds(sent, sent[j+i], j, cond):
                     #print(f'***condition {cond} met, token {sent[j+i]}')
                     if i == len(conditions)-1:
-                        llista.append(token)
+                        token_list.append(token.get("form"))
                         counter+=1
                         if printf:
                             print(f'\t\t ****match in sentence {sent.metadata["sent_id"]}')
@@ -600,8 +613,8 @@ def check_sent_for_conditions(sent, conditions, printf=False):
                     break
     #print("i am using counter conds rn")
         #count= counter_conds(conllu_parse, conditions)
-    #return llista
-    return counter
+    return token_list
+    #return counter
 
 
 #receives two lists of conditions (which are acutally dictionaries of conditions, in the shape:
