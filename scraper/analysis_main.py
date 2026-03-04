@@ -1,4 +1,5 @@
-from conllu_test import file_to_conllu, check_conds, check_conllu_for_conditions_v3, check_conllu_for_conditions2, check_conllu_for_conditions_v4
+from .conllu_test import file_to_conllu, check_conds, check_conllu_for_conditions_v3, check_conllu_for_conditions2, check_conllu_for_conditions_v4
+
 import time
 import pandas as pd
 from pathlib import Path
@@ -67,7 +68,7 @@ def eval_pipeline(list_of_eval_sets, file_list, outfile, basic_run=True, extra_e
         for file in file_list:
             for num, eval_series in enumerate(list_of_eval_sets):
                 print(f"Evaluating list {num+1} of {len(list_of_eval_sets)} on {file}")
-                res_l=eval_conds(eval_series, file, max_ex=100, custom_id=True)
+                res_l=eval_conds(eval_series, file, max_ex=1, custom_id=True)
                 for result in res_l:
                     #adding a eval series number to the results from the same list of conditions (like nsubj list)
                     result.update({"cond_nr": conds_count})
@@ -89,7 +90,8 @@ def eval_pipeline(list_of_eval_sets, file_list, outfile, basic_run=True, extra_e
         print("going for extra printing files to each condition")
         for num, eval_series in enumerate(list_of_eval_sets):
             print(f"******************num {num} of {len(list_of_eval_sets)}")
-            for name, cond in tqdm(eval_series.items(), total=len(eval_series)):
+            for name, cond in eval_series.items():
+#            for name, cond in tqdm(eval_series.items(), total=len(eval_series)):
                 sentences_res= []
                 for file in file_list:
                     print(f"Evaluating cond {name} on {file}")
@@ -161,7 +163,8 @@ def conllu_file_stats(file):
     # number of articles
     art_ids = {"a"}
     for sent in conllu_file:
-        art_ids.add(sent.metadata["article_id"])
+        if "article_id" in sent.metadata.keys():
+            art_ids.add(sent.metadata["article_id"])
     d["articles"]= len(art_ids)
     d["sentences/article"] = d["sentences"]/d["articles"]
     #calculate tree depth

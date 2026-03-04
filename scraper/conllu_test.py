@@ -207,7 +207,7 @@ def merge_evals(condict1, condict2):
         #print("RESULT:", cross_name, "::::", cross_cond, "\n")
 
     return mega_dict
-
+#fa totes les interseccions possibles entre els elements d una llista d evals
 def merge_list_evals(cond_list):
     if type(cond_list) is not list:
         print("error, merge_list_evals requires a list!")
@@ -220,6 +220,7 @@ def merge_list_evals(cond_list):
 
 
 # same workings as has_no_sons
+# if there is a son that fullfills at least 1 cond, it is false ~(AuB)
 def has_no_sons(sent, token, index, l_conds):
     for i, condy in enumerate(l_conds):
         #print(f"\tchecking parents of {token} for cond. {i} of {len(l_conds)}")
@@ -234,7 +235,7 @@ def has_no_sons(sent, token, index, l_conds):
 
 
 
-#If there is a son that fullfills the conds, it is false
+#If there is a son that fullfills all the conds, it is false
 # If there is none, it is true
 def has_no_son(sent, token, index, conds):
     for word in sent:
@@ -517,7 +518,7 @@ def check_conllu_for_conditions_v3(filename, conditions, max_l=100, printf=False
             break
         times=len(check_sent_for_conditions(sent, conditions, printf))
         if times:
-            if custom_id:
+            if custom_id and "custom_id" in sent.metadata.keys():
                 llista.append((times,sent.metadata["custom_sent_id"]))
             else:
                 llista.append((times, sent.metadata["sent_id"]))
@@ -544,7 +545,8 @@ def check_conllu_for_conditions_v4(filename, conditions, max_l=100, printf=False
         if times:
             d= {"times": times, "matches":matches, "sent_text": sent.metadata["text"], "filename": filename, "eval_date": datetime.datetime.now()}
             if custom_id:
-                d["custom_sent_id"] = sent.metadata["custom_sent_id"]
+                if "custom_sent_id" in sent.metadata.keys():
+                    d["custom_sent_id"] = sent.metadata["custom_sent_id"]
             else:
                 d["sent_id"] = sent.metadata["sent_id"]
             llista.append(d)
@@ -719,7 +721,7 @@ def conllu_merger(file_list, output_file, repeated_articles= False):
     else:
         print("we re allowing repeated articles")
         for i, sent in enumerate(parse(mega_conllu)):
-            sent.metadata.update({"sent_id": str(sent_id_counter).zfill(6)})
+            sent.metadata.update({"sent_id_custom": str(sent_id_counter).zfill(6)})
             sent_id_counter = sent_id_counter + 1
             macro_conllu_string = macro_conllu_string + sent.serialize()
     print("Total nr of articles", total_counter, "total nr of unique articles", unique_counter)
