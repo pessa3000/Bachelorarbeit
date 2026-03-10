@@ -10,10 +10,9 @@ import html
 from cleaning_tools import KI_r2c, gen_r2c, corpus_to_data
 
 # API configuration
-api_key = '89d3827b18a05873a7112804bc3fa1fb' # SAIA API key, gültig bis märz 25
+api_key = 'your-api-key' # SAIA API key, gültig bis märz 25
 base_url = "https://chat-ai.academiccloud.de/v1"
-#model = "meta-llama-3.1-8b-instruct" # Choose any available model
-  
+
 # Start OpenAI client
 client = OpenAI(
     api_key = api_key,
