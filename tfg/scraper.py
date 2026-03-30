@@ -18,7 +18,7 @@ from cleaning_tools import tv3_r2c, gen_r2c, corpus_to_data
 
 
 
-#this is the adapted scraper for the post 17.09.25 tv3 layout
+#this is the adapted tfg for the post 17.09.25 tv3 layout
 def article_scraper(article_url):
     # create a new dictionary for each article
     data = {}  
@@ -279,7 +279,7 @@ def tv3_pipeline(tema, desired_articles, pages_to_check, last_page=100):
     return data_list
 
 
-# def scraper
+# def tfg
 # llista temes is a dictionary of the kind {"meteorologia":325}, this is, topic + starting page
 # desired articles and pages to check are positive int, pages to check is a multiple of 10 and bigger than 10*desired articles
 # codi is a string
