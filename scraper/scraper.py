@@ -267,8 +267,10 @@ def tv3_pipeline(tema, desired_articles, pages_to_check, last_page=100):
     for number, data_set in enumerate(data_list):
         data_set["batch_id"]= f"{date}_{tema}_{l}"
         data_set["custom_id"]= data_set["batch_id"]+"_tv3_"+f"{str(number).zfill(3)}"
+        # corpus: full text, cleant
         data_set["corpus"] = tv3_r2c(gen_r2c(data_set["text"]))
         # 2-step cleaning
+        # QC-volltext: dataset, only declarative sentences, etc
         data_set["QC_volltext"]=corpus_to_data(data_set["corpus"])
 
         data_set["QC_text"]=  ".".join(data_set["QC_volltext"].split(".")[3:])

@@ -192,15 +192,17 @@ def spacy_pipeline(infile, outfile, printf= True):
         if not article["QC_text"]:
             print("\tERR: QC text is empty. Skipping", infile, "article nr", i)
             continue
+        else:
+            text = article["QC_text"]
 
         # checking if article is AI slop
-        if len(repeated_sentences_finder_text(article["QC_text"])) > 0.1 * len(article["QC_text"].split(". ")):
-            print(f'Ai slop detected, {100 * len(repeated_sentences_finder_text(article["QC_text"])) / len(article["QC_text"].split(". "))}% of repeated sentences. SKipping')
+        if len(repeated_sentences_finder_text(text)) > 0.1 * len(text.split(". ")):
+            print(f'Ai slop detected, {100 * len(repeated_sentences_finder_text(text)) / len(text.split(". "))}% of repeated sentences. SKipping')
             continue
 
         t1=time.time()
 
-        analysed_article=spacy_to_conll(article["QC_text"])
+        analysed_article=spacy_to_conll(text)
 
         #print(article["QC_text"])
         # reopen it using parse to change the metadata

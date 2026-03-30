@@ -10,7 +10,7 @@ import html
 from cleaning_tools import KI_r2c, gen_r2c, corpus_to_data
 
 # API configuration
-api_key = 'your-api-key' # SAIA API key, gültig bis märz 25
+api_key = 'your-api-key' # SAIA API key,
 base_url = "https://chat-ai.academiccloud.de/v1"
 
 # Start OpenAI client
@@ -54,7 +54,7 @@ internvl2.5-8b
 qwen2.5-vl-72b-instruct'''
 models_list = models.split(" \n")
 
-models_bons= ["llama-3.3-70b-instruct", "gemma-3-27b-it", "mistral-large-instruct"]
+#models_bons= ["llama-3.3-70b-instruct", "gemma-3-27b-it", "mistral-large-instruct"]
 
 # makes a series of queries to the llm_model
 # returns a list of dicts, 
