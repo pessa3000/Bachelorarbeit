@@ -5,9 +5,6 @@ from functools import wraps
 import glob
 import json
 import datetime
-#with open("prova_conll.conllu", "r") as f:
-#    sentences = f.read()
-#    conllu_parse = parse(sentences)
 
 
 

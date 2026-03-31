@@ -2,7 +2,6 @@
 
 #analitza text en catala fent servir l spacy i el guarda en format conllu
 #aquest funcio es pot executar de la manera seguent :D
-# ./spacy_to_conll text.txt > prova_conll.conllu -> ja no,  me n he cansat
 
 import os
 import glob
