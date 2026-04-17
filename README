@@ -1,5 +1,5 @@
 HI!
-This is the unfinished code to my Bachelor Thesis project, it comprises:
+This is the code to my Bachelor Thesis project, it comprises:
 - A scraper to download news from Catalan news portal 3cat
 - Some instructions to create a thematic parallel corpus to the news using AI
 - A Spacy pipeline to annotate the data in UD 
