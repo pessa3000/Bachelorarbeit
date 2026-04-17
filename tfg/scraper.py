@@ -134,7 +134,7 @@ def tv3_text_cleaner_v2(html_text):
                 break
         if flag == 1:
             continue
-        # If paragraph ends in these characters, i remove the whole paragraph
+        # If paragraph ends in these characters, remove the whole paragraph
         bad_characters = ['"', "“", "”", ")"]
         flag = 0
         for character in bad_characters:
@@ -225,15 +225,15 @@ def tv3_pipeline(tema, desired_articles, pages_to_check, last_page=100):
     print("data_links collected", len(data_links), tema)
     data_links= [link for link in data_links if link not in data_links_all]
     data_links_all = data_links_all + data_links
-    print("data_links without repetition", len(data_links))
-    #print("Data linkks for topic", tema)
-    print(data_links)
+    #print("data_links without repetition", len(data_links))
+    #print("Data links for topic", tema)
+    #print(data_links)
     # execute the scraping function for each link
     for i, article_url in enumerate(data_links):
 
         scraped_article = article_scraper(article_url)
         if scraped_article:
-            print(f"adding new nr. {i}: {scraped_article['title']}")
+            #print(f"adding new nr. {i}: {scraped_article['title']}")
             #print(scraped_article.keys())
             if scraped_article["published_date"] > "2022-11-29":
                 print("Date of ChatGPT-3-publishment erreicht at article", i , scraped_article["published_date"])

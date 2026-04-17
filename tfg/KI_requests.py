@@ -58,7 +58,7 @@ models_list = models.split(" \n")
 
 # makes a series of queries to the llm_model
 # returns a list of dicts, 
-def ask_llm(prompts, max_queries, value, waiting_time=False, printf=True):
+def ask_llm(prompts, max_queries, value, waiting_time=False):
     chat_completions =[]
     t0 = time.time()
     n= min(len(prompts), max_queries)
